@@ -1,4 +1,4 @@
-FROM rust:1.75.0-slim as base
+FROM rust:1.78.0-slim AS base
 WORKDIR /usr/src/aot-backend
 RUN apt-get update -y && apt-get install -y \
     libpq-dev \
@@ -9,7 +9,7 @@ RUN cargo install diesel_cli --no-default-features --features postgres
 RUN cargo install cargo-watch
 RUN cargo install cargo-chef
 
-FROM base as planner
+FROM base AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
