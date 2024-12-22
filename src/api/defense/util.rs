@@ -13,7 +13,7 @@ use crate::schema::prop;
 use crate::util::function;
 use crate::{api::util::GameHistoryResponse, error::DieselError};
 use anyhow::{Ok, Result};
-use diesel::dsl::exists;
+use diesel::dsl::{exists, min};
 use diesel::{prelude::*, select};
 use rand::Rng;
 use serde::{Deserialize, Serialize};

@@ -3,7 +3,7 @@ use super::{
     util::{DefenderTypeResponse, MineTypeResponse},
     MapSpacesEntry,
 };
-use crate::{api::error::BaseInvalidError, constants::*, models::*};
+use crate::{api::error::BaseInvalidError, constants::*, models::*, schema::building_type};
 use petgraph::{self, algo::tarjan_scc, prelude::*, Graph};
 use std::collections::{HashMap, HashSet};
 
