@@ -26,16 +26,16 @@ ALTER TABLE attacker_type
 
 -- Adding prop_id column to defender_type, mine_type, building_type, and attacker_type
 ALTER TABLE building_type
-    ADD COLUMN prop_id INTEGER;
+    ADD COLUMN prop_id INTEGER NOT NULL;
 
 ALTER TABLE defender_type
-    ADD COLUMN prop_id INTEGER;
+    ADD COLUMN prop_id INTEGER NOT NULL;
 
 ALTER TABLE mine_type
-    ADD COLUMN prop_id INTEGER;
+    ADD COLUMN prop_id INTEGER NOT NULL;
 
 ALTER TABLE attacker_type
-    ADD COLUMN prop_id INTEGER;
+    ADD COLUMN prop_id INTEGER NOT NULL;
 
 --Add foreign key constraints for prop_id
 ALTER TABLE building_type
