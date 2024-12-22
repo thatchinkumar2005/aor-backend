@@ -14,15 +14,11 @@ ALTER TABLE block_type
 
 -- Deleting "name", range and freqency columns from defender_type, mine_type, and attacker_type
 ALTER TABLE defender_type
-    DROP COLUMN "name",
     DROP COLUMN radius;
 
 ALTER TABLE mine_type
-    DROP COLUMN "name",
     DROP COLUMN radius;
 
-ALTER TABLE attacker_type
-    DROP COLUMN "name";
 
 -- Adding prop_id column to defender_type, mine_type, building_type, and attacker_type
 ALTER TABLE building_type

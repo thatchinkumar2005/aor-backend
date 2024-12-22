@@ -74,6 +74,7 @@ pub struct BuildingType {
     pub level: i32,
     pub cost: i32,
     pub hp: i32,
+    pub prop_id: i32,
 }
 
 #[derive(Insertable)]
@@ -296,6 +297,8 @@ pub struct MineType {
     pub damage: i32,
     pub level: i32,
     pub cost: i32,
+    pub name: String,
+    pub prop_id: i32,
 }
 
 #[derive(Queryable, Clone, Debug, Serialize)]
@@ -305,6 +308,8 @@ pub struct DefenderType {
     pub damage: i32,
     pub level: i32,
     pub cost: i32,
+    pub name: String,
+    pub prop_id: i32,
 }
 
 #[derive(Queryable, Clone, Debug, Serialize)]
@@ -329,6 +334,8 @@ pub struct AttackerType {
     pub amt_of_emps: i32,
     pub level: i32,
     pub cost: i32,
+    pub name: String,
+    pub prop_id: i32,
 }
 
 #[derive(Queryable, Clone, Debug, Serialize)]

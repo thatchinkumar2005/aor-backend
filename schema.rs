@@ -35,7 +35,9 @@ diesel::table! {
         amt_of_emps -> Int4,
         level -> Int4,
         cost -> Int4,
-        prop_id -> Nullable<Int4>,
+        #[max_length = 255]
+        name -> Varchar,
+        prop_id -> Int4,
     }
 }
 
@@ -75,7 +77,7 @@ diesel::table! {
         level -> Int4,
         cost -> Int4,
         hp -> Int4,
-        prop_id -> Nullable<Int4>,
+        prop_id -> Int4,
     }
 }
 
@@ -86,7 +88,9 @@ diesel::table! {
         damage -> Int4,
         level -> Int4,
         cost -> Int4,
-        prop_id -> Nullable<Int4>,
+        #[max_length = 255]
+        name -> Varchar,
+        prop_id -> Int4,
     }
 }
 
@@ -164,7 +168,9 @@ diesel::table! {
         damage -> Int4,
         level -> Int4,
         cost -> Int4,
-        prop_id -> Nullable<Int4>,
+        #[max_length = 255]
+        name -> Varchar,
+        prop_id -> Int4,
     }
 }
 
