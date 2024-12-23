@@ -12,7 +12,7 @@ ALTER TABLE block_type
     DROP COLUMN building_type,
     ADD COLUMN category_id INTEGER NOT NULL;
 
--- Deleting "name", range and freqency columns from defender_type, mine_type, and attacker_type
+-- Deleting range and freqency columns from defender_type, mine_type, and attacker_type
 ALTER TABLE defender_type
     DROP COLUMN radius;
 
