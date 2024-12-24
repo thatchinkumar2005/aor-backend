@@ -467,7 +467,7 @@ pub fn get_map_details_for_attack(
             if block_type.category == BlockCategory::Mine {
                 map_space.block_type_id = ROAD_ID;
                 map_space
-            }else{
+            } else {
                 map_space
             }
             // if block_type.building_type == ROAD_ID {
