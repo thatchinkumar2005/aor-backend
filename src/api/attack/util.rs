@@ -15,7 +15,9 @@ use crate::api::{self, RedisConn};
 use crate::constants::*;
 use crate::error::DieselError;
 use crate::models::{
-    Artifact, AttackerType, AvailableBlocks, BlockCategory, BlockType, BuildingType, DefenderType, EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop, User
+    Artifact, AttackerType, AvailableBlocks, BlockCategory, BlockType, BuildingType, DefenderType,
+    EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop,
+    User,
 };
 use crate::schema::{prop, user};
 use crate::util::function;
@@ -276,7 +278,7 @@ pub fn get_attacker_types(conn: &mut PgConnection) -> Result<HashMap<i32, Attack
                     amt_of_emps: attacker.amt_of_emps,
                     level: attacker.level,
                     cost: attacker.cost,
-                    prop_id: attacker.prop_id
+                    prop_id: attacker.prop_id,
                 },
             )
         })
@@ -538,7 +540,10 @@ pub fn get_mines(conn: &mut PgConnection, map_id: i32) -> Result<Vec<MineDetails
 
     let joined_table = map_spaces::table
         .filter(map_spaces::map_id.eq(map_id))
-        .inner_join(block_type::table.inner_join(mine_type::table.on(block_type::category_id.eq(mine_type::id))))
+        .inner_join(
+            block_type::table
+                .inner_join(mine_type::table.on(block_type::category_id.eq(mine_type::id))),
+        )
         .inner_join(prop::table.on(mine_type::prop_id.eq(prop::id)));
 
     let mines: Vec<MineDetails> = joined_table
@@ -600,7 +605,7 @@ pub fn get_defenders(
             table: "map_spaces",
             function: function!(),
             error: err,
-         })?;
+        })?;
 
     let mut defenders: Vec<DefenderDetails> = Vec::new();
 

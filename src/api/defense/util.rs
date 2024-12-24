@@ -467,7 +467,7 @@ pub fn get_map_details_for_attack(
             if block_type.category == BlockCategory::Mine {
                 map_space.block_type_id = ROAD_ID;
                 map_space
-            }else{
+            } else {
                 map_space
             }
             // if block_type.building_type == ROAD_ID {
@@ -886,19 +886,21 @@ pub fn fetch_building_blocks(
             error: err,
         })?
         .into_iter()
-        .map(|(_, block_type, building_type, prop)| BuildingTypeResponse {
-            id: building_type.id,
-            name: building_type.name,
-            width: building_type.width,
-            height: building_type.height,
-            level: building_type.level,
-            cost: building_type.cost,
-            capacity: building_type.capacity,
-            block_id: block_type.id,
-            hp: building_type.hp,
-            range: prop.range,
-            frequency: prop.frequency,
-        })
+        .map(
+            |(_, block_type, building_type, prop)| BuildingTypeResponse {
+                id: building_type.id,
+                name: building_type.name,
+                width: building_type.width,
+                height: building_type.height,
+                level: building_type.level,
+                cost: building_type.cost,
+                capacity: building_type.capacity,
+                block_id: block_type.id,
+                hp: building_type.hp,
+                range: prop.range,
+                frequency: prop.frequency,
+            },
+        )
         .collect();
     Ok(buildings)
 }

@@ -339,7 +339,7 @@ pub struct AttackerType {
 }
 
 #[derive(Queryable, Clone, Debug, Serialize)]
-pub struct Prop{
+pub struct Prop {
     pub id: i32,
     pub range: i32,
     pub frequency: i32,
