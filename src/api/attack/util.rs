@@ -17,7 +17,6 @@ use crate::error::DieselError;
 use crate::models::{
     Artifact, AttackerType, AvailableBlocks, BlockCategory, BlockType, BuildingType, DefenderType, EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop, User
 };
-use crate::schema::game::defend_id;
 use crate::schema::{prop, user};
 use crate::util::function;
 use crate::validator::util::Coords;
@@ -565,7 +564,7 @@ pub fn get_defenders(
     map_id: i32,
     user_id: i32,
 ) -> Result<Vec<DefenderDetails>> {
-    use crate::schema::{available_blocks, block_type, building_type, defender_type, map_spaces};
+    use crate::schema::{available_blocks, block_type, defender_type, map_spaces};
     // let result: Vec<(
     //     MapSpaces,
     //     (BlockType, AvailableBlocks, BuildingType, DefenderType),

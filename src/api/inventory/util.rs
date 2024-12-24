@@ -4,7 +4,6 @@ use crate::models::{
     AttackerType, BlockCategory, BlockType, BuildingType, DefenderType, EmpType, ItemCategory,
     MineType, Prop,
 };
-use crate::schema::available_blocks::block_type_id;
 use crate::schema::{
     artifact, attacker_type, available_blocks, block_type, building_type, defender_type, emp_type,
     mine_type, prop,
