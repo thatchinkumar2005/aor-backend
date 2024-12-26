@@ -437,9 +437,9 @@ COPY public.map_spaces FROM stdin;
 171	1	1	34	15
 172	1	36	20	58
 173	1	20	36	61
-174	1	39	20	64
+174	1	39	21	64
 175	1	39	21	64
-176	1	39	22	64
+176	1	39	21	64
 \.
 
 COPY public.artifact FROM stdin;
