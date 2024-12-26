@@ -162,6 +162,13 @@ pub fn is_valid_save_layout(
             ROAD_ID
         };
 
+        let defender_name = if block.category == BlockCategory::Defender {
+            let defender_name = defenders.get(&block.category_id).unwrap().name.clone();
+            defender_name
+        } else {
+            String::from("Not a defender")
+        };
+
         if artifacts > buildings[&building_type].capacity {
             return Err(BaseInvalidError::InvalidArtifactCount);
         }
@@ -180,11 +187,21 @@ pub fn is_valid_save_layout(
         // add roads and entrances to graph
         // let new_node = graph.add_node(());
         if building_type == ROAD_ID {
-            let road_node = road_graph.add_node(());
-            // map_grid.insert((x_coordinate, y_coordinate), new_node);
-            road_grid.insert((x_coordinate, y_coordinate), road_node);
-            // node_to_coords.insert(new_node, (x_coordinate, y_coordinate));
-            road_node_to_coords.insert(road_node, (x_coordinate, y_coordinate));
+            if defender_name == "Hut_Defender" {
+                if !road_grid.contains_key(&(x_coordinate, y_coordinate)) {
+                    let road_node = road_graph.add_node(());
+                    // map_grid.insert((x_coordinate, y_coordinate), new_node);
+                    road_grid.insert((x_coordinate, y_coordinate), road_node);
+                    // node_to_coords.insert(new_node, (x_coordinate, y_coordinate));
+                    road_node_to_coords.insert(road_node, (x_coordinate, y_coordinate));
+                }
+            } else {
+                let road_node = road_graph.add_node(());
+                // map_grid.insert((x_coordinate, y_coordinate), new_node);
+                road_grid.insert((x_coordinate, y_coordinate), road_node);
+                // node_to_coords.insert(new_node, (x_coordinate, y_coordinate));
+                road_node_to_coords.insert(road_node, (x_coordinate, y_coordinate));
+            }
         } else {
             // let entrance = (map_space.x_coordinate, map_space.y_coordinate);
             // node_to_coords.insert(new_node, entrance);
@@ -194,9 +211,9 @@ pub fn is_valid_save_layout(
         }
     }
 
-    if total_artifacts != *user_artifacts {
-        return Err(BaseInvalidError::InvalidArtifactCount);
-    }
+    // if total_artifacts != *user_artifacts {
+    //     return Err(BaseInvalidError::InvalidArtifactCount);
+    // }
     //print building id,
 
     for (x_coordinate, y_coordinate, width) in map_buildings {
