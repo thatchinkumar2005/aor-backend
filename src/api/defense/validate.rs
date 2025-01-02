@@ -67,11 +67,10 @@ pub fn is_valid_update_layout(
                 if (0..MAP_SIZE as i32).contains(&(x + i))
                     && (0..MAP_SIZE as i32).contains(&(y + j))
                 {
-                    if occupied_positions.contains(&(x + i, y + j)) {
-                        if defender_name != "Hut_Defender" {
-                            return Err(BaseInvalidError::OverlappingBlocks);
-                        }
-                        //return Err(BaseInvalidError::OverlappingBlocks);
+                    if occupied_positions.contains(&(x + i, y + j))
+                        && defender_name != "Hut_Defender"
+                    {
+                        return Err(BaseInvalidError::OverlappingBlocks);
                     }
                     occupied_positions.insert((x + i, y + j));
                 } else {
@@ -188,13 +187,13 @@ pub fn is_valid_save_layout(
         // let new_node = graph.add_node(());
         if building_type == ROAD_ID {
             if defender_name == "Hut_Defender" {
-                if !road_grid.contains_key(&(x_coordinate, y_coordinate)) {
-                    let road_node = road_graph.add_node(());
-                    // map_grid.insert((x_coordinate, y_coordinate), new_node);
-                    road_grid.insert((x_coordinate, y_coordinate), road_node);
-                    // node_to_coords.insert(new_node, (x_coordinate, y_coordinate));
-                    road_node_to_coords.insert(road_node, (x_coordinate, y_coordinate));
-                }
+                road_grid
+                    .entry((x_coordinate, y_coordinate))
+                    .or_insert_with(|| {
+                        let road_node = road_graph.add_node(());
+                        road_node_to_coords.insert(road_node, (x_coordinate, y_coordinate));
+                        road_node
+                    });
             } else {
                 let road_node = road_graph.add_node(());
                 // map_grid.insert((x_coordinate, y_coordinate), new_node);
@@ -211,10 +210,10 @@ pub fn is_valid_save_layout(
         }
     }
 
-    // if total_artifacts != *user_artifacts {
-    //     return Err(BaseInvalidError::InvalidArtifactCount);
-    // }
-    //print building id,
+    if total_artifacts != *user_artifacts {
+        return Err(BaseInvalidError::InvalidArtifactCount);
+    }
+    // print building id,
 
     for (x_coordinate, y_coordinate, width) in map_buildings {
         let building_top_left_x = x_coordinate;
