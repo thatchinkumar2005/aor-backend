@@ -27,7 +27,7 @@ DELETE FROM public.levels_fixture;
 DELETE FROM public.prop;
 
 COPY public.levels_fixture FROM stdin;
-1	2024_01_01 00:00:00	2025_01_01 00:00:00	40	1	3
+1	2024_01_01 00:00:00	2026_01_01 00:00:00	40	1	3
 \.
 
 COPY public.user FROM stdin;
