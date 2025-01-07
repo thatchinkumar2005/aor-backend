@@ -20,6 +20,7 @@ diesel::table! {
 diesel::table! {
     attack_type (id) {
         id -> Int4,
+
         att_type -> Varchar,
         attack_radius -> Int4,
         attack_damage -> Int4,
@@ -34,6 +35,7 @@ diesel::table! {
         amt_of_emps -> Int4,
         level -> Int4,
         cost -> Int4,
+
         name -> Varchar,
         prop_id -> Int4,
     }
@@ -67,6 +69,7 @@ diesel::table! {
 diesel::table! {
     building_type (id) {
         id -> Int4,
+
         name -> Varchar,
         width -> Int4,
         height -> Int4,
@@ -85,6 +88,7 @@ diesel::table! {
         damage -> Int4,
         level -> Int4,
         cost -> Int4,
+
         name -> Varchar,
         prop_id -> Int4,
     }
@@ -93,10 +97,12 @@ diesel::table! {
 diesel::table! {
     emp_type (id) {
         id -> Int4,
+
         att_type -> Varchar,
         attack_radius -> Int4,
         attack_damage -> Int4,
         cost -> Int4,
+
         name -> Varchar,
         level -> Int4,
     }
@@ -162,6 +168,7 @@ diesel::table! {
         damage -> Int4,
         level -> Int4,
         cost -> Int4,
+
         name -> Varchar,
         prop_id -> Int4,
     }
@@ -197,8 +204,11 @@ diesel::table! {
 diesel::table! {
     user (id) {
         id -> Int4,
+
         name -> Varchar,
+
         email -> Varchar,
+
         username -> Varchar,
         is_pragyan -> Bool,
         attacks_won -> Int4,
