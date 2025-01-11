@@ -28,6 +28,8 @@ pub struct State {
     pub artifacts: i32,
     pub defenders: Vec<DefenderDetails>,
     pub hut_defender: DefenderDetails,
+    pub hut_triggered: bool,
+    pub hut_defenders: i32,
     pub mines: Vec<MineDetails>,
     pub buildings: Vec<BuildingDetails>,
     pub total_hp_buildings: i32,
@@ -43,6 +45,10 @@ impl State {
         mines: Vec<MineDetails>,
         buildings: Vec<BuildingDetails>,
     ) -> State {
+        let hut_building = buildings
+            .iter()
+            .find(|&r| r.name == "Defender_Hut")
+            .unwrap();
         State {
             frame_no: 0,
             attacker_user_id,
@@ -59,6 +65,8 @@ impl State {
             artifacts: 0,
             defenders,
             hut_defender,
+            hut_triggered: false,
+            hut_defenders: 3,
             mines,
             buildings,
             total_hp_buildings: 0,
@@ -193,9 +201,14 @@ impl State {
             if (((hut_building.tile.x - new_pos.x).abs())
                 + ((hut_building.tile.y - new_pos.y).abs()))
                 <= hut_building.range
+                && !self.hut_triggered
             {
                 //hut triggered.
                 log::info!("In range!");
+                self.hut_triggered = true;
+            }
+
+            if self.hut_triggered && self.hut_defenders > 0 {
                 let mut shadow_tiles: Vec<(i32, i32)> = Vec::new();
                 for i in 0..hut_building.width {
                     for j in 0..hut_building.width {
@@ -255,7 +268,6 @@ impl State {
                     self.defenders.push(hut_defender_clone);
                 }
             } else {
-                log::info!("Not in range!");
                 attacker.trigger_hut = false;
                 attacker.hut_defender_coords = None;
             }
