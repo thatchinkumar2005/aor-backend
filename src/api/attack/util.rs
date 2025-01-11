@@ -609,7 +609,7 @@ pub fn get_defenders(
 
     let mut defenders: Vec<DefenderDetails> = Vec::new();
 
-    for (_, _, defender_type, prop, map_space) in result.iter() {
+    for (_, block_type, defender_type, prop, map_space) in result.iter() {
         let (hut_x, hut_y) = (map_space.x_coordinate, map_space.y_coordinate);
         // let path: Vec<(i32, i32)> = vec![(hut_x, hut_y)];
         defenders.push(DefenderDetails {
@@ -622,6 +622,7 @@ pub fn get_defenders(
             damage_dealt: false,
             target_id: None,
             path_in_current_frame: Vec::new(),
+            block_id: block_type.id,
         })
     }
     // Sorted to handle multiple defenders attack same attacker at same frame
@@ -673,7 +674,7 @@ pub fn get_hut_defender(conn: &mut PgConnection, user_id: i32) -> Result<Defende
         .filter(available_blocks::user_id.eq(user_id))
         .filter(defender_type::name.eq("Hut_Defender".to_string()));
 
-    let (_, _, defender_type) = joined_table
+    let (_, block_type, defender_type) = joined_table
         .first::<(AvailableBlocks, BlockType, DefenderType)>(conn)
         .map_err(|err| DieselError {
             table: "available_blocks",
@@ -690,6 +691,7 @@ pub fn get_hut_defender(conn: &mut PgConnection, user_id: i32) -> Result<Defende
         damage_dealt: false,
         target_id: None,
         path_in_current_frame: Vec::new(),
+        block_id: block_type.id,
     })
 }
 

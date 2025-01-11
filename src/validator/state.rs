@@ -14,7 +14,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::{BombType, HutDefenderSpawn};
+use super::util::BombType;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -246,17 +246,14 @@ impl State {
         &mut self,
         roads: &HashSet<(i32, i32)>,
         attacker_current: Attacker,
-    ) -> Option<HutDefenderSpawn> {
-        let mut attacker = attacker_current.clone();
+    ) -> Option<DefenderDetails> {
+        let attacker = attacker_current.clone();
         let hut_building = self
             .buildings
             .iter()
             .find(|&r| r.name == "Defender_Hut")
             .unwrap();
-        let mut response = HutDefenderSpawn {
-            spawn: false,
-            hut_defender_coords: None,
-        };
+        let mut response = self.hut_defender.clone();
         for (i, _coord) in attacker_current
             .path_in_current_frame
             .into_iter()
@@ -289,8 +286,10 @@ impl State {
                     hut_defender_clone.defender_pos.y = tile2.1;
                     hut_defender_clone.target_id =
                         Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.spawn = true;
-                    response.hut_defender_coords = Some(tile2);
+                    response.defender_pos = Coords {
+                        x: tile2.0,
+                        y: tile2.1,
+                    };
                     self.defenders.push(hut_defender_clone);
                 } else if roads.contains(&tile4) {
                     let mut hut_defender_clone = self.hut_defender.clone();
@@ -298,8 +297,10 @@ impl State {
                     hut_defender_clone.defender_pos.y = tile4.1;
                     hut_defender_clone.target_id =
                         Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.spawn = true;
-                    response.hut_defender_coords = Some(tile4);
+                    response.defender_pos = Coords {
+                        x: tile4.0,
+                        y: tile4.1,
+                    };
                     self.defenders.push(hut_defender_clone);
                 } else if roads.contains(&tile3) {
                     let mut hut_defender_clone = self.hut_defender.clone();
@@ -307,8 +308,10 @@ impl State {
                     hut_defender_clone.defender_pos.y = tile3.1;
                     hut_defender_clone.target_id =
                         Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.spawn = true;
-                    response.hut_defender_coords = Some(tile3);
+                    response.defender_pos = Coords {
+                        x: tile3.0,
+                        y: tile3.1,
+                    };
                     self.defenders.push(hut_defender_clone);
                 } else if roads.contains(&tile1) {
                     let mut hut_defender_clone = self.hut_defender.clone();
@@ -316,13 +319,14 @@ impl State {
                     hut_defender_clone.defender_pos.y = tile1.1;
                     hut_defender_clone.target_id =
                         Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.spawn = true;
-                    response.hut_defender_coords = Some(tile1);
+                    response.defender_pos = Coords {
+                        x: tile1.0,
+                        y: tile1.1,
+                    };
                     self.defenders.push(hut_defender_clone);
                 }
             } else {
-                response.spawn = false;
-                response.hut_defender_coords = None;
+                return None;
             }
         }
         return Some(response);

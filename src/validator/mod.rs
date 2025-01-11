@@ -92,7 +92,7 @@ pub fn game_handler(
                 defender_damaged: None,
                 damaged_buildings: None,
                 hut_triggered: false,
-                hut_defender_coords: None,
+                hut_defender: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -185,7 +185,7 @@ pub fn game_handler(
                     defender_damaged: Some(defender_damaged_result.clone().defender_response),
                     damaged_buildings: None,
                     hut_triggered: false,
-                    hut_defender_coords: None,
+                    hut_defender: None,
                     total_damage_percentage: Some(_game_state.damage_percentage),
                     is_sync: false,
                     is_game_over: false,
@@ -235,7 +235,7 @@ pub fn game_handler(
                 defender_damaged: None,
                 damaged_buildings: None,
                 hut_triggered: false,
-                hut_defender_coords: None,
+                hut_defender: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -313,7 +313,7 @@ pub fn game_handler(
                 defender_damaged: None,
                 damaged_buildings: Some(buildings_damaged_result),
                 hut_triggered: false,
-                hut_defender_coords: None,
+                hut_defender: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -332,7 +332,7 @@ pub fn game_handler(
                 defender_damaged: None,
                 damaged_buildings: None,
                 hut_triggered: false,
-                hut_defender_coords: None,
+                hut_defender: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -350,7 +350,7 @@ pub fn game_handler(
                 defender_damaged: None,
                 damaged_buildings: None,
                 hut_triggered: false,
-                hut_defender_coords: None,
+                hut_defender: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: true,
@@ -371,7 +371,7 @@ pub fn game_handler(
                 defender_damaged: None,
                 damaged_buildings: None,
                 hut_triggered: false,
-                hut_defender_coords: None,
+                hut_defender: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -399,9 +399,9 @@ pub fn game_handler(
                         bomb_count: attacker.amt_of_emps,
                     },
                 );
-                let spawn_result_clone = spawn_result.clone().unwrap();
+                let hut_triggered = spawn_result.is_some();
 
-                let result_type = if spawn_result_clone.spawn {
+                let result_type = if hut_triggered {
                     ResultType::SpawnHutDefender
                 } else {
                     ResultType::Nothing
@@ -416,8 +416,8 @@ pub fn game_handler(
                     // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
                     defender_damaged: None,
                     damaged_buildings: None,
-                    hut_triggered: spawn_result_clone.spawn,
-                    hut_defender_coords: spawn_result_clone.hut_defender_coords,
+                    hut_triggered,
+                    hut_defender: spawn_result,
                     total_damage_percentage: Some(_game_state.damage_percentage),
                     is_sync: false,
                     is_game_over: false,

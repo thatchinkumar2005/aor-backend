@@ -32,18 +32,12 @@ pub struct Attacker {
     pub bomb_count: i32,
 }
 
-#[derive(Serialize, Clone, Deserialize, Debug)]
-pub struct HutDefenderSpawn {
-    pub spawn: bool,
-    pub hut_defender_coords: Option<(i32, i32)>,
-}
-
 #[derive(Serialize, Clone, Deserialize)]
 pub struct IsTriggered {
     pub is_triggered: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DefenderDetails {
     pub id: i32,
     pub radius: i32,
@@ -54,6 +48,7 @@ pub struct DefenderDetails {
     pub damage_dealt: bool,
     pub target_id: Option<f32>,
     pub path_in_current_frame: Vec<Coords>,
+    pub block_id: i32,
 }
 
 // Structs for sending response
@@ -132,7 +127,7 @@ pub fn send_terminate_game_message(frame_number: i32, message: String) -> Socket
         defender_damaged: None,
         damaged_buildings: None,
         hut_triggered: false,
-        hut_defender_coords: None,
+        hut_defender: None,
         total_damage_percentage: None,
         is_sync: false,
         is_game_over: true,
