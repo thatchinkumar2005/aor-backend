@@ -18,7 +18,7 @@ pub struct SocketRequest {
     pub is_game_over: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SocketResponse {
     pub frame_number: i32,
     pub result_type: ResultType,
@@ -27,6 +27,8 @@ pub struct SocketResponse {
     pub exploded_mines: Option<Vec<MineDetails>>,
     // pub triggered_defenders: Option<Vec<DefenderResponse>>,
     pub defender_damaged: Option<Vec<DefenderResponse>>,
+    pub hut_triggered: bool,
+    pub hut_defender_coords: Option<(i32, i32)>,
     pub damaged_buildings: Option<Vec<BuildingResponse>>,
     pub total_damage_percentage: Option<f32>,
     pub is_sync: bool,
@@ -51,6 +53,7 @@ pub enum ResultType {
     MinesExploded,
     DefendersDamaged,
     DefendersTriggered,
+    HutTriggered,
     BuildingsDamaged,
     GameOver,
     PlacedAttacker,
@@ -65,7 +68,7 @@ pub struct MineResponse {
     pub radius: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct DefenderResponse {
     pub id: i32,
     pub position: Coords,

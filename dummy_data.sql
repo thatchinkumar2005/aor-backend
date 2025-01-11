@@ -52,6 +52,12 @@ COPY public.prop FROM stdin;
 10	5	0
 11	6	0
 12	7	0
+13	10	1
+14	15	2
+15	19	3
+16	5	1
+17	10	2
+18	15	3
 \.
 
 
@@ -102,6 +108,12 @@ COPY public.building_type FROM stdin;
 43	Building_13	3	3	80	3	-1	100	0
 44	Building_14	4	4	100	3	-1	120	0
 45	Building_15	5	5	120	3	-1	140	0
+46	Defender_Hut	3	3	120	1	10	120	13
+47	Defender_Hut	3	3	120	2	75	140	14
+48	Defender_Hut	3	3	120	3	-1	160	15
+49	Sentry	3	3	120	1	10	120	16
+50	Sentry	3	3	120	2	75	140	17
+51	Sentry	3	3	120	3	-1	160	18
 \.
 
 COPY public.defender_type FROM stdin;
@@ -114,6 +126,9 @@ COPY public.defender_type FROM stdin;
 7	4	70	3	-1	Defender_1	7
 8	4	60	3	-1	Defender_2	8
 9	4	50	3	-1	Defender_3	9
+10	4	50	1	-1	Hut_Defender	0
+11	4	40	2	-1	Hut_Defender	0
+12	4	60	3	-1	Hut_Defender	0
 \.
 
 COPY public.emp_type FROM stdin;
@@ -205,6 +220,15 @@ COPY public.block_type FROM stdin;
 55	mine	1
 56	mine	2
 57	mine	3
+58	building	46
+59	building	47
+60	building	48
+61	building	49
+62	building	50
+63	building	51
+64	defender	10
+65	defender	11
+66	defender	12
 \.
 
 COPY public.available_blocks FROM stdin;
@@ -234,6 +258,9 @@ COPY public.available_blocks FROM stdin;
 \N	1	\N	1	emp	23
 \N	1	\N	2	emp	24
 \N	1	\N	3	emp	25
+58	1	\N	\N	block	26
+61	1	\N	\N	block	27
+64	1	\N	\N	block	28
 \.
 
 COPY public.map_spaces FROM stdin;
@@ -408,10 +435,12 @@ COPY public.map_spaces FROM stdin;
 169	1	1	25	13
 170	1	1	30	14
 171	1	1	34	15
+172	1	36	20	58
+173	1	20	36	61
 \.
 
 COPY public.artifact FROM stdin;
-157	500
+156	500
 \.
 
 COPY public.level_constraints FROM stdin;

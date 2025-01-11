@@ -11,7 +11,7 @@ pub struct SourceDestXY {
     pub dest_y: i32,
 }
 
-#[derive(Serialize, Clone, Copy, Deserialize)]
+#[derive(Serialize, Clone, Copy, Deserialize, Debug)]
 pub struct Bomb {
     pub id: i32,
     pub blast_radius: i32,
@@ -20,7 +20,7 @@ pub struct Bomb {
     pub is_dropped: bool,
 }
 
-#[derive(Serialize, Clone, Deserialize)]
+#[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct Attacker {
     pub id: i32,
     pub attacker_pos: Coords,
@@ -29,6 +29,8 @@ pub struct Attacker {
     pub path_in_current_frame: Vec<Coords>,
     pub bombs: Vec<Bomb>,
     pub trigger_defender: bool,
+    pub trigger_hut: bool,
+    pub hut_defender_coords: Option<(i32, i32)>,
     pub bomb_count: i32,
 }
 
@@ -51,7 +53,7 @@ pub struct DefenderDetails {
 }
 
 // Structs for sending response
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MineDetails {
     pub id: i32,
     pub position: Coords,
@@ -75,6 +77,9 @@ pub struct BuildingDetails {
     pub artifacts_obtained: i32,
     pub tile: Coords,
     pub width: i32,
+    pub name: String,
+    pub range: i32,
+    pub frequency: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -122,6 +127,8 @@ pub fn send_terminate_game_message(frame_number: i32, message: String) -> Socket
         exploded_mines: None,
         defender_damaged: None,
         damaged_buildings: None,
+        hut_triggered: false,
+        hut_defender_coords: None,
         total_damage_percentage: None,
         is_sync: false,
         is_game_over: true,

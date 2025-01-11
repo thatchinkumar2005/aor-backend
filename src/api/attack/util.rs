@@ -19,7 +19,7 @@ use crate::models::{
     EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop,
     User,
 };
-use crate::schema::{prop, user};
+use crate::schema::{available_blocks, block_type, defender_type, prop, user};
 use crate::util::function;
 use crate::validator::util::Coords;
 use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
@@ -636,18 +636,19 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
         .inner_join(block_type::table)
         .filter(block_type::category.eq(BlockCategory::Building))
         .inner_join(building_type::table.on(block_type::category_id.eq(building_type::id)))
+        .inner_join(prop::table.on(building_type::prop_id.eq(prop::id)))
         .filter(map_spaces::map_id.eq(map_id))
         .filter(building_type::id.ne(ROAD_ID));
 
     let buildings: Vec<BuildingDetails> = joined_table
-        .load::<(MapSpaces, BlockType, BuildingType)>(conn)
+        .load::<(MapSpaces, BlockType, BuildingType, Prop)>(conn)
         .map_err(|err| DieselError {
             table: "map_spaces",
             function: function!(),
             error: err,
         })?
         .into_iter()
-        .map(|(map_space, _, building_type)| BuildingDetails {
+        .map(|(map_space, _, building_type, prop)| BuildingDetails {
             id: map_space.id,
             current_hp: building_type.hp,
             total_hp: building_type.hp,
@@ -657,9 +658,39 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
                 y: map_space.y_coordinate,
             },
             width: building_type.width,
+            name: building_type.name,
+            range: prop.range,
+            frequency: prop.frequency,
         })
         .collect();
     update_buidling_artifacts(conn, map_id, buildings)
+}
+
+pub fn get_hut_defender(conn: &mut PgConnection, user_id: i32) -> Result<DefenderDetails> {
+    let joined_table = available_blocks::table
+        .inner_join(block_type::table.on(block_type::category.eq(BlockCategory::Defender)))
+        .inner_join(defender_type::table.on(block_type::category_id.eq(defender_type::id)))
+        .filter(available_blocks::user_id.eq(user_id))
+        .filter(defender_type::name.eq("Hut_Defender".to_string()));
+
+    let (_, _, defender_type) = joined_table
+        .first::<(AvailableBlocks, BlockType, DefenderType)>(conn)
+        .map_err(|err| DieselError {
+            table: "available_blocks",
+            function: function!(),
+            error: err,
+        })?;
+    Ok(DefenderDetails {
+        id: defender_type.id,
+        radius: 0,
+        speed: defender_type.speed,
+        damage: defender_type.damage,
+        defender_pos: Coords { x: 0, y: 0 },
+        is_alive: true,
+        damage_dealt: false,
+        target_id: None,
+        path_in_current_frame: Vec::new(),
+    })
 }
 
 pub fn get_bomb_types(conn: &mut PgConnection) -> Result<Vec<BombType>> {
