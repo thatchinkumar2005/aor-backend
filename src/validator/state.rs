@@ -14,7 +14,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::BombType;
+use super::util::{BombType, HutDefenderSpawn};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -208,70 +208,6 @@ impl State {
                 self.hut_triggered = true;
             }
 
-            if self.hut_triggered && self.hut_defenders > 0 {
-                let mut shadow_tiles: Vec<(i32, i32)> = Vec::new();
-                for i in 0..hut_building.width {
-                    for j in 0..hut_building.width {
-                        shadow_tiles.push((hut_building.tile.x + i, hut_building.tile.y + j));
-                    }
-                }
-                let tile2 = (
-                    shadow_tiles[shadow_tiles.len() - 2].0 + 1,
-                    shadow_tiles[shadow_tiles.len() - 2].1,
-                );
-                let tile4 = (
-                    shadow_tiles[(2 * hut_building.width - 1) as usize].0,
-                    shadow_tiles[(2 * hut_building.width - 1) as usize].1 + 1,
-                );
-                let tile3 = (
-                    shadow_tiles[hut_building.width as usize].0,
-                    shadow_tiles[hut_building.width as usize].1 - 1,
-                );
-                let tile1 = (shadow_tiles[1].0 - 1, shadow_tiles[1].1);
-
-                if roads.contains(&tile2) {
-                    log::info!("{:?}", tile2);
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile2.0;
-                    hut_defender_clone.defender_pos.y = tile2.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    attacker.trigger_hut = true;
-                    attacker.hut_defender_coords = Some(tile2);
-                    self.defenders.push(hut_defender_clone);
-                } else if roads.contains(&tile4) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile4.0;
-                    hut_defender_clone.defender_pos.y = tile4.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    attacker.trigger_hut = true;
-                    attacker.hut_defender_coords = Some(tile4);
-                    self.defenders.push(hut_defender_clone);
-                } else if roads.contains(&tile3) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile3.0;
-                    hut_defender_clone.defender_pos.y = tile3.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    attacker.trigger_hut = true;
-                    attacker.hut_defender_coords = Some(tile3);
-                    self.defenders.push(hut_defender_clone);
-                } else if roads.contains(&tile1) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile1.0;
-                    hut_defender_clone.defender_pos.y = tile1.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    attacker.trigger_hut = true;
-                    attacker.hut_defender_coords = Some(tile1);
-                    self.defenders.push(hut_defender_clone);
-                }
-            } else {
-                attacker.trigger_hut = false;
-                attacker.hut_defender_coords = None;
-            }
-
             for defender in self.defenders.iter_mut() {
                 if defender.target_id.is_none()
                     && defender.is_alive
@@ -301,11 +237,95 @@ impl State {
             path_in_current_frame: attacker.path_in_current_frame.clone(),
             bombs: attacker.bombs.clone(),
             trigger_defender: attacker.trigger_defender,
-            trigger_hut: attacker.trigger_hut,
-            hut_defender_coords: attacker.hut_defender_coords,
             bomb_count: attacker.bomb_count,
         };
         Some(attacker_result)
+    }
+
+    pub fn spawn_hut_defender(
+        &mut self,
+        roads: &HashSet<(i32, i32)>,
+        attacker_current: Attacker,
+    ) -> Option<HutDefenderSpawn> {
+        let mut attacker = attacker_current.clone();
+        let hut_building = self
+            .buildings
+            .iter()
+            .find(|&r| r.name == "Defender_Hut")
+            .unwrap();
+        let mut response = HutDefenderSpawn {
+            spawn: false,
+            hut_defender_coords: None,
+        };
+        for (i, _coord) in attacker_current
+            .path_in_current_frame
+            .into_iter()
+            .enumerate()
+        {
+            let mut shadow_tiles: Vec<(i32, i32)> = Vec::new();
+            for i in 0..hut_building.width {
+                for j in 0..hut_building.width {
+                    shadow_tiles.push((hut_building.tile.x + i, hut_building.tile.y + j));
+                }
+            }
+            if self.hut_triggered && self.hut_defenders > 0 {
+                let tile2 = (
+                    shadow_tiles[shadow_tiles.len() - 2].0 + 1,
+                    shadow_tiles[shadow_tiles.len() - 2].1,
+                );
+                let tile4 = (
+                    shadow_tiles[(2 * hut_building.width - 1) as usize].0,
+                    shadow_tiles[(2 * hut_building.width - 1) as usize].1 + 1,
+                );
+                let tile3 = (
+                    shadow_tiles[hut_building.width as usize].0,
+                    shadow_tiles[hut_building.width as usize].1 - 1,
+                );
+                let tile1 = (shadow_tiles[1].0 - 1, shadow_tiles[1].1);
+
+                if roads.contains(&tile2) {
+                    let mut hut_defender_clone = self.hut_defender.clone();
+                    hut_defender_clone.defender_pos.x = tile2.0;
+                    hut_defender_clone.defender_pos.y = tile2.1;
+                    hut_defender_clone.target_id =
+                        Some((i) as f32 / attacker.attacker_speed as f32);
+                    response.spawn = true;
+                    response.hut_defender_coords = Some(tile2);
+                    self.defenders.push(hut_defender_clone);
+                } else if roads.contains(&tile4) {
+                    let mut hut_defender_clone = self.hut_defender.clone();
+                    hut_defender_clone.defender_pos.x = tile4.0;
+                    hut_defender_clone.defender_pos.y = tile4.1;
+                    hut_defender_clone.target_id =
+                        Some((i) as f32 / attacker.attacker_speed as f32);
+                    response.spawn = true;
+                    response.hut_defender_coords = Some(tile4);
+                    self.defenders.push(hut_defender_clone);
+                } else if roads.contains(&tile3) {
+                    let mut hut_defender_clone = self.hut_defender.clone();
+                    hut_defender_clone.defender_pos.x = tile3.0;
+                    hut_defender_clone.defender_pos.y = tile3.1;
+                    hut_defender_clone.target_id =
+                        Some((i) as f32 / attacker.attacker_speed as f32);
+                    response.spawn = true;
+                    response.hut_defender_coords = Some(tile3);
+                    self.defenders.push(hut_defender_clone);
+                } else if roads.contains(&tile1) {
+                    let mut hut_defender_clone = self.hut_defender.clone();
+                    hut_defender_clone.defender_pos.x = tile1.0;
+                    hut_defender_clone.defender_pos.y = tile1.1;
+                    hut_defender_clone.target_id =
+                        Some((i) as f32 / attacker.attacker_speed as f32);
+                    response.spawn = true;
+                    response.hut_defender_coords = Some(tile1);
+                    self.defenders.push(hut_defender_clone);
+                }
+            } else {
+                response.spawn = false;
+                response.hut_defender_coords = None;
+            }
+        }
+        return Some(response);
     }
 
     pub fn place_bombs(

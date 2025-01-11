@@ -491,7 +491,7 @@ async fn socket_handler(
                                         if session_clone1.text(response_json).await.is_err() {
                                             return;
                                         }
-                                    } else if response.result_type == ResultType::HutTriggered {
+                                    } else if response.result_type == ResultType::SpawnHutDefender {
                                         game_state.hut_defenders -= 1;
                                         if session_clone1.text(response_json).await.is_err() {
                                             return;

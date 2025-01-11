@@ -53,8 +53,6 @@ pub fn game_handler(
                     attacker_speed: attacker.speed,
                     bombs: Vec::new(),
                     trigger_defender: false,
-                    trigger_hut: false,
-                    hut_defender_coords: None,
                     bomb_count: attacker.amt_of_emps,
                 });
 
@@ -119,8 +117,6 @@ pub fn game_handler(
                         attacker_speed: attacker.speed,
                         bombs: Vec::new(),
                         trigger_defender: false,
-                        trigger_hut: false,
-                        hut_defender_coords: None,
                         bomb_count: attacker.amt_of_emps,
                     },
                 );
@@ -159,9 +155,7 @@ pub fn game_handler(
                 // if attacker_result_clone.trigger_defender {
                 //     bool_temp = true;
                 // }
-                let result_type = if attacker_result_clone.trigger_hut {
-                    ResultType::HutTriggered
-                } else if attacker_result_clone.trigger_defender {
+                let result_type = if attacker_result_clone.trigger_defender {
                     ResultType::DefendersDamaged
                 } else {
                     ResultType::Nothing
@@ -190,8 +184,8 @@ pub fn game_handler(
                     // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
                     defender_damaged: Some(defender_damaged_result.clone().defender_response),
                     damaged_buildings: None,
-                    hut_triggered: attacker_result_clone.trigger_hut,
-                    hut_defender_coords: attacker_result_clone.hut_defender_coords,
+                    hut_triggered: false,
+                    hut_defender_coords: None,
                     total_damage_percentage: Some(_game_state.damage_percentage),
                     is_sync: false,
                     is_game_over: false,
@@ -385,6 +379,52 @@ pub fn game_handler(
             };
 
             return Some(Ok(socket_response));
+        }
+        ActionType::SpawnHutDefender => {
+            if let Some(attacker_id) = socket_request.attacker_id {
+                log::info!("Unleash defender");
+                let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
+                let attacker_delta: Vec<Coords> = socket_request.attacker_path;
+
+                let spawn_result = _game_state.spawn_hut_defender(
+                    _roads,
+                    Attacker {
+                        id: attacker.id,
+                        path_in_current_frame: attacker_delta.clone(),
+                        attacker_pos: socket_request.start_position.unwrap(),
+                        attacker_health: attacker.max_health,
+                        attacker_speed: attacker.speed,
+                        bombs: Vec::new(),
+                        trigger_defender: false,
+                        bomb_count: attacker.amt_of_emps,
+                    },
+                );
+                let spawn_result_clone = spawn_result.clone().unwrap();
+
+                let result_type = if spawn_result_clone.spawn {
+                    ResultType::SpawnHutDefender
+                } else {
+                    ResultType::Nothing
+                };
+
+                let response = SocketResponse {
+                    frame_number: socket_request.frame_number,
+                    result_type,
+                    is_alive: None,
+                    attacker_health: None,
+                    exploded_mines: None,
+                    // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
+                    defender_damaged: None,
+                    damaged_buildings: None,
+                    hut_triggered: spawn_result_clone.spawn,
+                    hut_defender_coords: spawn_result_clone.hut_defender_coords,
+                    total_damage_percentage: Some(_game_state.damage_percentage),
+                    is_sync: false,
+                    is_game_over: false,
+                    message: Some(String::from("Movement Response")),
+                };
+                return Some(Ok(response));
+            }
         }
     }
     None

@@ -46,6 +46,7 @@ pub enum ActionType {
     Idle,
     Terminate,
     SelfDestruct,
+    SpawnHutDefender,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -53,7 +54,7 @@ pub enum ResultType {
     MinesExploded,
     DefendersDamaged,
     DefendersTriggered,
-    HutTriggered,
+    SpawnHutDefender,
     BuildingsDamaged,
     GameOver,
     PlacedAttacker,

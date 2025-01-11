@@ -29,9 +29,13 @@ pub struct Attacker {
     pub path_in_current_frame: Vec<Coords>,
     pub bombs: Vec<Bomb>,
     pub trigger_defender: bool,
-    pub trigger_hut: bool,
-    pub hut_defender_coords: Option<(i32, i32)>,
     pub bomb_count: i32,
+}
+
+#[derive(Serialize, Clone, Deserialize, Debug)]
+pub struct HutDefenderSpawn {
+    pub spawn: bool,
+    pub hut_defender_coords: Option<(i32, i32)>,
 }
 
 #[derive(Serialize, Clone, Deserialize)]
