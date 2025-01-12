@@ -66,7 +66,7 @@ impl State {
             defenders,
             hut_defender,
             hut_triggered: false,
-            hut_defenders: 3,
+            hut_defenders: hut_building.frequency,
             mines,
             buildings,
             total_hp_buildings: 0,
