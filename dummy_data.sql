@@ -443,7 +443,7 @@ COPY public.map_spaces FROM stdin;
 \.
 
 COPY public.artifact FROM stdin;
-156	500
+157	500
 \.
 
 COPY public.level_constraints FROM stdin;
