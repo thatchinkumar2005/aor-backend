@@ -671,11 +671,12 @@ pub fn get_hut_defender(conn: &mut PgConnection, user_id: i32) -> Result<Defende
     let joined_table = available_blocks::table
         .inner_join(block_type::table.on(block_type::category.eq(BlockCategory::Defender)))
         .inner_join(defender_type::table.on(block_type::category_id.eq(defender_type::id)))
+        .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)))
         .filter(available_blocks::user_id.eq(user_id))
         .filter(defender_type::name.eq("Hut_Defender".to_string()));
 
-    let (_, block_type, defender_type) = joined_table
-        .first::<(AvailableBlocks, BlockType, DefenderType)>(conn)
+    let (_, block_type, defender_type, prop) = joined_table
+        .first::<(AvailableBlocks, BlockType, DefenderType, Prop)>(conn)
         .map_err(|err| DieselError {
             table: "available_blocks",
             function: function!(),
@@ -683,7 +684,7 @@ pub fn get_hut_defender(conn: &mut PgConnection, user_id: i32) -> Result<Defende
         })?;
     Ok(DefenderDetails {
         id: defender_type.id,
-        radius: 0,
+        radius: prop.range,
         speed: defender_type.speed,
         damage: defender_type.damage,
         defender_pos: Coords { x: 0, y: 0 },

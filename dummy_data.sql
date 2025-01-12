@@ -58,6 +58,9 @@ COPY public.prop FROM stdin;
 16	5	1
 17	10	2
 18	15	3
+19	5	0
+20	10	0
+21	15	0
 \.
 
 
@@ -126,9 +129,9 @@ COPY public.defender_type FROM stdin;
 7	4	70	3	-1	Defender_1	7
 8	4	60	3	-1	Defender_2	8
 9	4	50	3	-1	Defender_3	9
-10	4	50	1	-1	Hut_Defender	0
-11	4	40	2	-1	Hut_Defender	0
-12	4	60	3	-1	Hut_Defender	0
+10	4	20	1	-1	Hut_Defender	19
+11	4	30	2	-1	Hut_Defender	20
+12	4	50	3	-1	Hut_Defender	21
 \.
 
 COPY public.emp_type FROM stdin;
