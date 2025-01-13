@@ -11,7 +11,9 @@ use crate::api::util::HistoryboardQuery;
 use crate::constants::{GAME_AGE_IN_MINUTES, MAX_BOMBS_PER_ATTACK};
 use crate::models::{AttackerType, User};
 use crate::validator::state::State;
-use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
+use crate::validator::util::{
+    BombType, BuildingDetails, DefenderDetails, HutDefenderDetails, MineDetails,
+};
 use crate::validator::util::{Coords, SourceDestXY};
 use actix_rt;
 use actix_web::error::ErrorBadRequest;
@@ -286,8 +288,9 @@ async fn socket_handler(
     .map_err(|err| error::handle_error(err.into()))?;
 
     let mut conn = pool.get().map_err(|err| error::handle_error(err.into()))?;
-    let hut_defender: DefenderDetails = web::block(move || {
-        Ok(util::get_hut_defender(&mut conn, defender_id)?) as anyhow::Result<DefenderDetails>
+    let hut_defenders: HashMap<i32, DefenderDetails> = web::block(move || {
+        Ok(util::get_hut_defender(&mut conn, defender_id)?)
+            as anyhow::Result<HashMap<i32, DefenderDetails>>
     })
     .await?
     .map_err(|err| error::handle_error(err.into()))?;
@@ -408,7 +411,7 @@ async fn socket_handler(
             attacker_id,
             defender_id,
             defenders,
-            hut_defender,
+            hut_defenders,
             mines,
             buildings,
         );
@@ -492,7 +495,7 @@ async fn socket_handler(
                                             return;
                                         }
                                     } else if response.result_type == ResultType::SpawnHutDefender {
-                                        game_state.hut_defenders -= 1;
+                                        // game_state.hut.hut_defenders_count -= 1;
                                         if session_clone1.text(response_json).await.is_err() {
                                             return;
                                         }

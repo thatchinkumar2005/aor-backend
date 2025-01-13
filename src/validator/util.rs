@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+
 use crate::api::attack::socket::DefenderResponse;
 use crate::api::attack::socket::{ResultType, SocketResponse};
 use crate::validator::state::State;
@@ -49,6 +52,14 @@ pub struct DefenderDetails {
     pub target_id: Option<f32>,
     pub path_in_current_frame: Vec<Coords>,
     pub block_id: i32,
+    pub level: i32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct HutDefenderDetails {
+    pub hut_defenders: HashMap<i32, DefenderDetails>,
+    pub hut_triggered: HashMap<i32, bool>,
+    pub hut_defenders_count: HashMap<i32, i32>,
 }
 
 // Structs for sending response

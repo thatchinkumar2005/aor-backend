@@ -13,5 +13,6 @@ pub const GAME_AGE_IN_MINUTES: usize = 3;
 pub const MATCH_MAKING_ATTEMPTS: i32 = 10;
 pub const PERCENTANGE_ARTIFACTS_OBTAINABLE: f32 = 0.3;
 pub const BOMB_DAMAGE_MULTIPLIER: f32 = 5.0;
+pub const HUT_DEFENDERS_LIMIT: i32 = 3;
 
 pub const LIVES: i32 = 3;

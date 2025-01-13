@@ -3,7 +3,9 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use crate::constants::{BOMB_DAMAGE_MULTIPLIER, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE};
+use crate::constants::{
+    self, BOMB_DAMAGE_MULTIPLIER, HUT_DEFENDERS_LIMIT, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
+};
 use crate::{
     api::attack::socket::{BuildingResponse, DefenderResponse},
     validator::util::{
@@ -14,7 +16,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::BombType;
+use super::util::{BombType, HutDefenderDetails};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -27,9 +29,7 @@ pub struct State {
     pub damage_percentage: f32,
     pub artifacts: i32,
     pub defenders: Vec<DefenderDetails>,
-    pub hut_defender: DefenderDetails,
-    pub hut_triggered: bool,
-    pub hut_defenders: i32,
+    pub hut: HutDefenderDetails,
     pub mines: Vec<MineDetails>,
     pub buildings: Vec<BuildingDetails>,
     pub total_hp_buildings: i32,
@@ -41,14 +41,18 @@ impl State {
         attacker_user_id: i32,
         defender_user_id: i32,
         defenders: Vec<DefenderDetails>,
-        hut_defender: DefenderDetails,
+        hut_defenders: HashMap<i32, DefenderDetails>,
         mines: Vec<MineDetails>,
         buildings: Vec<BuildingDetails>,
     ) -> State {
-        let hut_building = buildings
-            .iter()
-            .find(|&r| r.name == "Defender_Hut")
-            .unwrap();
+        let mut hut_triggered = HashMap::new();
+        let mut hut_defenders_count = HashMap::new();
+        for building in buildings.clone() {
+            if building.name == "Defender_Hut" {
+                hut_triggered.insert(building.id, false);
+                hut_defenders_count.insert(building.id, HUT_DEFENDERS_LIMIT);
+            }
+        }
         State {
             frame_no: 0,
             attacker_user_id,
@@ -64,9 +68,11 @@ impl State {
             damage_percentage: 0.0,
             artifacts: 0,
             defenders,
-            hut_defender,
-            hut_triggered: false,
-            hut_defenders: hut_building.frequency,
+            hut: HutDefenderDetails {
+                hut_defenders,
+                hut_triggered,
+                hut_defenders_count,
+            },
             mines,
             buildings,
             total_hp_buildings: 0,

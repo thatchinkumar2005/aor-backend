@@ -19,7 +19,7 @@ use crate::models::{
     EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop,
     User,
 };
-use crate::schema::{available_blocks, block_type, defender_type, prop, user};
+use crate::schema::{available_blocks, block_type, building_type, defender_type, prop, user};
 use crate::util::function;
 use crate::validator::util::Coords;
 use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
@@ -623,6 +623,7 @@ pub fn get_defenders(
             target_id: None,
             path_in_current_frame: Vec::new(),
             block_id: block_type.id,
+            level: defender_type.level,
         })
     }
     // Sorted to handle multiple defenders attack same attacker at same frame
@@ -667,34 +668,63 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
     update_buidling_artifacts(conn, map_id, buildings)
 }
 
-pub fn get_hut_defender(conn: &mut PgConnection, user_id: i32) -> Result<DefenderDetails> {
-    let joined_table = available_blocks::table
-        .inner_join(block_type::table)
+pub fn get_hut_defender(
+    conn: &mut PgConnection,
+    user_id: i32,
+) -> Result<HashMap<i32, DefenderDetails>> {
+    let joined_table = block_type::table
         .filter(block_type::category.eq(BlockCategory::Defender))
         .inner_join(defender_type::table.on(block_type::category_id.eq(defender_type::id)))
-        .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)))
-        .filter(available_blocks::user_id.eq(user_id))
-        .filter(defender_type::name.eq("Hut_Defender"));
-
-    let (_, block_type, defender_type, prop) = joined_table
-        .first::<(AvailableBlocks, BlockType, DefenderType, Prop)>(conn)
+        .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)));
+    let hut_defenders: Vec<DefenderDetails> = joined_table
+        .load::<(BlockType, DefenderType, Prop)>(conn)
         .map_err(|err| DieselError {
-            table: "available_blocks",
+            table: "defender_type",
             function: function!(),
             error: err,
-        })?;
-    Ok(DefenderDetails {
-        id: defender_type.id,
-        radius: prop.range,
-        speed: defender_type.speed,
-        damage: defender_type.damage,
-        defender_pos: Coords { x: 0, y: 0 },
-        is_alive: true,
-        damage_dealt: false,
-        target_id: None,
-        path_in_current_frame: Vec::new(),
-        block_id: block_type.id,
-    })
+        })?
+        .into_iter()
+        .map(|(block_type, defender_type, prop)| DefenderDetails {
+            id: defender_type.id,
+            radius: prop.range,
+            speed: defender_type.speed,
+            damage: defender_type.damage,
+            defender_pos: Coords { x: 0, y: 0 },
+            is_alive: true,
+            damage_dealt: false,
+            target_id: None,
+            path_in_current_frame: Vec::new(),
+            block_id: block_type.id,
+            level: defender_type.level,
+        })
+        .collect();
+
+    let joined_table = available_blocks::table
+        .inner_join(block_type::table)
+        .filter(block_type::category.eq(BlockCategory::Building))
+        .inner_join(building_type::table.on(block_type::category_id.eq(building_type::id)))
+        .filter(available_blocks::user_id.eq(user_id))
+        .filter(building_type::name.eq("Defender_Hut"));
+
+    let huts: Vec<(i32, i32)> = joined_table
+        .load::<(AvailableBlocks, BlockType, BuildingType)>(conn)
+        .map_err(|err| DieselError {
+            table: "building_type",
+            function: function!(),
+            error: err,
+        })?
+        .into_iter()
+        .map(|(_, _, building_type)| (building_type.id, building_type.level))
+        .collect();
+
+    let mut hut_defenders_res: HashMap<i32, DefenderDetails> = HashMap::new();
+    for hut in huts {
+        if let Some(hut_defender) = hut_defenders.iter().find(|hd| hd.level == hut.1) {
+            hut_defenders_res.insert(hut.0, hut_defender.clone());
+        }
+    }
+
+    Ok(hut_defenders_res)
 }
 
 pub fn get_bomb_types(conn: &mut PgConnection) -> Result<Vec<BombType>> {
