@@ -438,6 +438,7 @@ fn get_defender_types(
                             cost: 0,
                             name: "".to_string(),
                             prop_id: 0,
+                            max_health: 0,
                         },
                         BlockType {
                             id: 0,

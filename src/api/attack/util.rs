@@ -622,6 +622,7 @@ pub fn get_defenders(
             damage_dealt: false,
             target_id: None,
             path_in_current_frame: Vec::new(),
+            max_health: defender_type.max_health,
         })
     }
     // Sorted to handle multiple defenders attack same attacker at same frame
