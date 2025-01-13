@@ -91,6 +91,7 @@ diesel::table! {
 
         name -> Varchar,
         prop_id -> Int4,
+        max_health -> Int4,
     }
 }
 
