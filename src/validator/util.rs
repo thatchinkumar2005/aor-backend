@@ -60,7 +60,7 @@ pub struct HutDefenderDetails {
     pub hut_defenders: HashMap<i32, DefenderDetails>,
     pub hut_triggered: HashMap<i32, bool>,
     pub hut_defenders_count: HashMap<i32, i32>,
-    pub hut_defender_latest_time: HashMap<i32, usize>,
+    pub hut_defender_latest_time: HashMap<i32, u128>,
 }
 
 // Structs for sending response
@@ -80,7 +80,7 @@ pub struct BombType {
     pub total_count: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BuildingDetails {
     pub id: i32,
     pub current_hp: i32,
@@ -91,6 +91,7 @@ pub struct BuildingDetails {
     pub name: String,
     pub range: i32,
     pub frequency: i32,
+    pub block_id: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

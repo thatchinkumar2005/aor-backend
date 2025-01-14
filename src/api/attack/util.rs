@@ -650,20 +650,23 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
             error: err,
         })?
         .into_iter()
-        .map(|(map_space, _, building_type, prop)| BuildingDetails {
-            id: map_space.id,
-            current_hp: building_type.hp,
-            total_hp: building_type.hp,
-            artifacts_obtained: 0,
-            tile: Coords {
-                x: map_space.x_coordinate,
-                y: map_space.y_coordinate,
+        .map(
+            |(map_space, block_type, building_type, prop)| BuildingDetails {
+                id: map_space.id,
+                current_hp: building_type.hp,
+                total_hp: building_type.hp,
+                artifacts_obtained: 0,
+                tile: Coords {
+                    x: map_space.x_coordinate,
+                    y: map_space.y_coordinate,
+                },
+                width: building_type.width,
+                name: building_type.name,
+                range: prop.range,
+                frequency: prop.frequency,
+                block_id: block_type.id,
             },
-            width: building_type.width,
-            name: building_type.name,
-            range: prop.range,
-            frequency: prop.frequency,
-        })
+        )
         .collect();
     update_buidling_artifacts(conn, map_id, buildings)
 }
@@ -673,12 +676,10 @@ pub fn get_hut_defender(
     user_id: i32,
 ) -> Result<HashMap<i32, DefenderDetails>> {
     let joined_table = block_type::table
-        .inner_join(
-            defender_type::table.on(block_type::category_id
-                .eq(defender_type::id)
-                .and(block_type::category.eq(BlockCategory::Defender))),
-        )
-        .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)));
+        .filter(block_type::category.eq(BlockCategory::Defender))
+        .inner_join(defender_type::table.on(block_type::category_id.eq(defender_type::id)))
+        .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)))
+        .filter(defender_type::name.eq("Hut_Defender"));
     let hut_defenders: Vec<DefenderDetails> = joined_table
         .load::<(BlockType, DefenderType, Prop)>(conn)
         .map_err(|err| DieselError {
@@ -717,7 +718,7 @@ pub fn get_hut_defender(
             error: err,
         })?
         .into_iter()
-        .map(|(_, _, building_type)| (building_type.id, building_type.level))
+        .map(|(_, block_type, building_type)| (block_type.id, building_type.level))
         .collect();
 
     let mut hut_defenders_res: HashMap<i32, DefenderDetails> = HashMap::new();
@@ -726,7 +727,7 @@ pub fn get_hut_defender(
             hut_defenders_res.insert(hut.0, hut_defender.clone());
         }
     }
-
+    log::info!("{:?}", hut_defenders_res);
     Ok(hut_defenders_res)
 }
 
