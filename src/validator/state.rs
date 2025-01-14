@@ -4,9 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::constants::{
-    BOMB_DAMAGE_MULTIPLIER, HUT_DEFENDERS_LIMIT, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
-};
+use crate::constants::{BOMB_DAMAGE_MULTIPLIER, LEVEL, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE};
 use crate::{
     api::attack::socket::{BuildingResponse, DefenderResponse},
     validator::util::{
@@ -51,8 +49,15 @@ impl State {
         let hut_defender_latest_time = HashMap::new();
         for building in buildings.clone() {
             if building.name == "Defender_Hut" {
+                //get defender_level for the hut
+                let defender_level = hut_defenders.get(&building.block_id).unwrap().level;
+
                 hut_triggered.insert(building.block_id, false);
-                hut_defenders_count.insert(building.block_id, HUT_DEFENDERS_LIMIT);
+
+                hut_defenders_count.insert(
+                    building.block_id,
+                    LEVEL[(defender_level - 1) as usize].hut.defenders_limit,
+                );
             }
         }
         State {
@@ -304,7 +309,7 @@ impl State {
                         .expect("Time went backwards");
                     let time_interval = hut_building.frequency as u128;
                     //check if time elapsed is greater than time stamp.
-                    now.as_millis() >= *time_stamp + time_interval * 1000
+                    now.as_millis() >= *time_stamp + time_interval
                 } else {
                     true
                 };

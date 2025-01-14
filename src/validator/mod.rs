@@ -407,52 +407,7 @@ pub fn game_handler(
             };
 
             return Some(Ok(socket_response));
-        } // ActionType::SpawnHutDefender => {
-          //     if let Some(attacker_id) = socket_request.attacker_id {
-          //         log::info!("Unleash defender");
-          //         let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
-          //         let attacker_delta: Vec<Coords> = socket_request.attacker_path;
-
-          //         let spawn_result = _game_state.spawn_hut_defender(
-          //             _roads,
-          //             Attacker {
-          //                 id: attacker.id,
-          //                 path_in_current_frame: attacker_delta.clone(),
-          //                 attacker_pos: socket_request.start_position.unwrap(),
-          //                 attacker_health: attacker.max_health,
-          //                 attacker_speed: attacker.speed,
-          //                 bombs: Vec::new(),
-          //                 trigger_defender: false,
-          //                 bomb_count: attacker.amt_of_emps,
-          //             },
-          //         );
-          //         let hut_triggered = spawn_result.is_some();
-
-          //         let result_type = if hut_triggered {
-          //             ResultType::SpawnHutDefender
-          //         } else {
-          //             ResultType::Nothing
-          //         };
-
-          //         let response = SocketResponse {
-          //             frame_number: socket_request.frame_number,
-          //             result_type,
-          //             is_alive: None,
-          //             attacker_health: None,
-          //             exploded_mines: None,
-          //             // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
-          //             defender_damaged: None,
-          //             damaged_buildings: None,
-          //             hut_triggered,
-          //             hut_defender: spawn_result,
-          //             total_damage_percentage: Some(_game_state.damage_percentage),
-          //             is_sync: false,
-          //             is_game_over: false,
-          //             message: Some(String::from("Movement Response")),
-          //         };
-          //         return Some(Ok(response));
-          //     }
-          // }
+        }
     }
     None
 }
