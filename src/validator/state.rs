@@ -303,6 +303,7 @@ impl State {
                         .duration_since(UNIX_EPOCH)
                         .expect("Time went backwards");
                     let time_interval = hut_building.frequency as u128;
+                    //check if time elapsed is greater than time stamp.
                     now.as_millis() >= *time_stamp + time_interval * 1000
                 } else {
                     true
@@ -325,10 +326,10 @@ impl State {
                         i,
                     ) {
                         //push it to state.
-                        log::info!("{:?}", hut_defender);
                         self.defenders.push(hut_defender.clone());
                         //push it to frontend response.
                         response.push(hut_defender);
+
                         //update time
                         let start = SystemTime::now();
                         let now = start

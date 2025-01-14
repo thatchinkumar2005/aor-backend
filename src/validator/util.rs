@@ -140,7 +140,7 @@ pub fn send_terminate_game_message(frame_number: i32, message: String) -> Socket
         defender_damaged: None,
         damaged_buildings: None,
         hut_triggered: false,
-        hut_defender: None,
+        hut_defenders: None,
         total_damage_percentage: None,
         is_sync: false,
         is_game_over: true,

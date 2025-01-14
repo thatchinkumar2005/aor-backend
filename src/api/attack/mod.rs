@@ -605,7 +605,7 @@ async fn socket_handler(
                     exploded_mines: None,
                     defender_damaged: None,
                     hut_triggered: false,
-                    hut_defender: None,
+                    hut_defenders: None,
                     damaged_buildings: None,
                     total_damage_percentage: None,
                     is_sync: false,
