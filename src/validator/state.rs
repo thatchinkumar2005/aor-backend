@@ -1,10 +1,11 @@
 use std::{
     cmp::max,
     collections::{HashMap, HashSet},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use crate::constants::{
-    self, BOMB_DAMAGE_MULTIPLIER, HUT_DEFENDERS_LIMIT, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
+    BOMB_DAMAGE_MULTIPLIER, HUT_DEFENDERS_LIMIT, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
 };
 use crate::{
     api::attack::socket::{BuildingResponse, DefenderResponse},
@@ -16,7 +17,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::{BombType, HutDefenderDetails};
+use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -47,6 +48,7 @@ impl State {
     ) -> State {
         let mut hut_triggered = HashMap::new();
         let mut hut_defenders_count = HashMap::new();
+        let hut_defender_latest_time = HashMap::new();
         for building in buildings.clone() {
             if building.name == "Defender_Hut" {
                 hut_triggered.insert(building.id, false);
@@ -72,6 +74,7 @@ impl State {
                 hut_defenders,
                 hut_triggered,
                 hut_defenders_count,
+                hut_defender_latest_time,
             },
             mines,
             buildings,
@@ -199,19 +202,26 @@ impl State {
 
             let new_pos = coord;
 
-            let hut_building = self
+            let hut_buildings: Vec<BuildingDetails> = self
                 .buildings
                 .iter()
-                .find(|&r| r.name == "Defender_Hut")
-                .unwrap();
-            if (((hut_building.tile.x - new_pos.x).abs())
-                + ((hut_building.tile.y - new_pos.y).abs()))
-                <= hut_building.range
-                && !self.hut_triggered
-            {
-                //hut triggered.
-                log::info!("In range!");
-                self.hut_triggered = true;
+                .filter(|&r| r.name == "Defender_Hut")
+                .cloned()
+                .collect();
+
+            for hut_building in hut_buildings {
+                let distance = (hut_building.tile.x - new_pos.x).abs()
+                    + (hut_building.tile.y - new_pos.y).abs();
+
+                if distance <= hut_building.range {
+                    if let Some(is_triggered) = self.hut.hut_triggered.get(&hut_building.id) {
+                        if !is_triggered {
+                            // Hut triggered
+                            log::info!("In range!");
+                            self.hut.hut_triggered.insert(hut_building.id, true);
+                        }
+                    }
+                }
             }
 
             for defender in self.defenders.iter_mut() {
@@ -252,87 +262,88 @@ impl State {
         &mut self,
         roads: &HashSet<(i32, i32)>,
         attacker_current: Attacker,
-    ) -> Option<DefenderDetails> {
+    ) -> Option<Vec<DefenderDetails>> {
         let attacker = attacker_current.clone();
-        let hut_building = self
+        let hut_buildings: Vec<&BuildingDetails> = self
             .buildings
             .iter()
-            .find(|&r| r.name == "Defender_Hut")
-            .unwrap();
-        let mut response = self.hut_defender.clone();
+            .filter(|&r| r.name == "Defender_Hut")
+            .collect();
+
+        let mut response = Vec::new();
         for (i, _coord) in attacker_current
             .path_in_current_frame
             .into_iter()
             .enumerate()
         {
-            let mut shadow_tiles: Vec<(i32, i32)> = Vec::new();
-            for i in 0..hut_building.width {
-                for j in 0..hut_building.width {
-                    shadow_tiles.push((hut_building.tile.x + i, hut_building.tile.y + j));
+            for &hut_building in &hut_buildings {
+                //get shadow tile for each hut.
+                let mut shadow_tiles: Vec<(i32, i32)> = Vec::new();
+                for i in 0..hut_building.width {
+                    for j in 0..hut_building.width {
+                        shadow_tiles.push((hut_building.tile.x + i, hut_building.tile.y + j));
+                    }
                 }
-            }
-            if self.hut_triggered && self.hut_defenders > 0 {
-                let tile2 = (
-                    shadow_tiles[shadow_tiles.len() - 2].0 + 1,
-                    shadow_tiles[shadow_tiles.len() - 2].1,
-                );
-                let tile4 = (
-                    shadow_tiles[(2 * hut_building.width - 1) as usize].0,
-                    shadow_tiles[(2 * hut_building.width - 1) as usize].1 + 1,
-                );
-                let tile3 = (
-                    shadow_tiles[hut_building.width as usize].0,
-                    shadow_tiles[hut_building.width as usize].1 - 1,
-                );
-                let tile1 = (shadow_tiles[1].0 - 1, shadow_tiles[1].1);
+                //see if hut is triggered
+                let hut_triggered = self
+                    .hut
+                    .hut_triggered
+                    .get(&hut_building.id)
+                    .unwrap()
+                    .clone();
 
-                if roads.contains(&tile2) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile2.0;
-                    hut_defender_clone.defender_pos.y = tile2.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.defender_pos = Coords {
-                        x: tile2.0,
-                        y: tile2.1,
-                    };
-                    self.defenders.push(hut_defender_clone);
-                } else if roads.contains(&tile4) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile4.0;
-                    hut_defender_clone.defender_pos.y = tile4.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.defender_pos = Coords {
-                        x: tile4.0,
-                        y: tile4.1,
-                    };
-                    self.defenders.push(hut_defender_clone);
-                } else if roads.contains(&tile3) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile3.0;
-                    hut_defender_clone.defender_pos.y = tile3.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.defender_pos = Coords {
-                        x: tile3.0,
-                        y: tile3.1,
-                    };
-                    self.defenders.push(hut_defender_clone);
-                } else if roads.contains(&tile1) {
-                    let mut hut_defender_clone = self.hut_defender.clone();
-                    hut_defender_clone.defender_pos.x = tile1.0;
-                    hut_defender_clone.defender_pos.y = tile1.1;
-                    hut_defender_clone.target_id =
-                        Some((i) as f32 / attacker.attacker_speed as f32);
-                    response.defender_pos = Coords {
-                        x: tile1.0,
-                        y: tile1.1,
-                    };
-                    self.defenders.push(hut_defender_clone);
+                //if hut is triggered and hut defenders are > 0, get the hut defender.
+                let time_elapsed = if let Some(time_stamp) =
+                    self.hut.hut_defender_latest_time.get(&hut_building.id)
+                {
+                    let start = SystemTime::now();
+                    let now = start
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards");
+                    let time_interval = hut_building.frequency as usize;
+                    now.as_millis() as usize >= *time_stamp + time_interval
+                } else {
+                    true
+                };
+                if hut_triggered
+                    && self
+                        .hut
+                        .hut_defenders_count
+                        .get(&hut_building.id)
+                        .unwrap_or(&0)
+                        > &0
+                    && time_elapsed
+                {
+                    if let Some(hut_defender) = select_side_hut_defender(
+                        &shadow_tiles,
+                        roads,
+                        &hut_building,
+                        &attacker,
+                        &self.hut.hut_defenders.get(&hut_building.id).unwrap(),
+                        i,
+                    ) {
+                        //push it to state.
+                        self.defenders.push(hut_defender.clone());
+                        //push it to frontend response.
+                        response.push(hut_defender);
+                        //update time
+                        let start = SystemTime::now();
+                        let now = start
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards");
+                        self.hut
+                            .hut_defender_latest_time
+                            .insert(hut_building.id, now.as_millis() as usize);
+                        let curr_count = self
+                            .hut
+                            .hut_defenders_count
+                            .get(&hut_building.id)
+                            .unwrap_or(&0);
+                        self.hut
+                            .hut_defenders_count
+                            .insert(hut_building.id, curr_count - 1);
+                    }
                 }
-            } else {
-                return None;
             }
         }
         return Some(response);

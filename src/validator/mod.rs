@@ -105,6 +105,7 @@ pub fn game_handler(
             if let Some(attacker_id) = socket_request.attacker_id {
                 let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
                 let attacker_delta: Vec<Coords> = socket_request.attacker_path;
+                let attacker_delta_clone = attacker_delta.clone();
 
                 let attacker_result = _game_state.attacker_movement(
                     socket_request.frame_number,
@@ -155,11 +156,11 @@ pub fn game_handler(
                 // if attacker_result_clone.trigger_defender {
                 //     bool_temp = true;
                 // }
-                let result_type = if attacker_result_clone.trigger_defender {
-                    ResultType::DefendersDamaged
-                } else {
-                    ResultType::Nothing
-                };
+                // let result_type = if attacker_result_clone.trigger_defender {
+                //     ResultType::DefendersDamaged
+                // } else {
+                //     ResultType::Nothing
+                // };
 
                 let mut is_attacker_alive = true;
 
@@ -175,6 +176,33 @@ pub fn game_handler(
                         _game_state.in_validation.message.clone(),
                     )));
                 }
+
+                let spawn_result = _game_state
+                    .spawn_hut_defender(
+                        _roads,
+                        Attacker {
+                            id: attacker.id,
+                            path_in_current_frame: attacker_delta_clone.clone(),
+                            attacker_pos: socket_request.start_position.unwrap(),
+                            attacker_health: attacker.max_health,
+                            attacker_speed: attacker.speed,
+                            bombs: Vec::new(),
+                            trigger_defender: false,
+                            bomb_count: attacker.amt_of_emps,
+                        },
+                    )
+                    .unwrap();
+
+                let hut_triggered = !spawn_result.is_empty();
+
+                let result_type = if hut_triggered {
+                    ResultType::SpawnHutDefender
+                } else if attacker_result_clone.trigger_defender {
+                    ResultType::DefendersDamaged
+                } else {
+                    ResultType::Nothing
+                };
+
                 let response = SocketResponse {
                     frame_number: socket_request.frame_number,
                     result_type,
@@ -184,8 +212,8 @@ pub fn game_handler(
                     // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
                     defender_damaged: Some(defender_damaged_result.clone().defender_response),
                     damaged_buildings: None,
-                    hut_triggered: false,
-                    hut_defender: None,
+                    hut_triggered,
+                    hut_defender: Some(spawn_result),
                     total_damage_percentage: Some(_game_state.damage_percentage),
                     is_sync: false,
                     is_game_over: false,
@@ -379,53 +407,52 @@ pub fn game_handler(
             };
 
             return Some(Ok(socket_response));
-        }
-        ActionType::SpawnHutDefender => {
-            if let Some(attacker_id) = socket_request.attacker_id {
-                log::info!("Unleash defender");
-                let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
-                let attacker_delta: Vec<Coords> = socket_request.attacker_path;
+        } // ActionType::SpawnHutDefender => {
+          //     if let Some(attacker_id) = socket_request.attacker_id {
+          //         log::info!("Unleash defender");
+          //         let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
+          //         let attacker_delta: Vec<Coords> = socket_request.attacker_path;
 
-                let spawn_result = _game_state.spawn_hut_defender(
-                    _roads,
-                    Attacker {
-                        id: attacker.id,
-                        path_in_current_frame: attacker_delta.clone(),
-                        attacker_pos: socket_request.start_position.unwrap(),
-                        attacker_health: attacker.max_health,
-                        attacker_speed: attacker.speed,
-                        bombs: Vec::new(),
-                        trigger_defender: false,
-                        bomb_count: attacker.amt_of_emps,
-                    },
-                );
-                let hut_triggered = spawn_result.is_some();
+          //         let spawn_result = _game_state.spawn_hut_defender(
+          //             _roads,
+          //             Attacker {
+          //                 id: attacker.id,
+          //                 path_in_current_frame: attacker_delta.clone(),
+          //                 attacker_pos: socket_request.start_position.unwrap(),
+          //                 attacker_health: attacker.max_health,
+          //                 attacker_speed: attacker.speed,
+          //                 bombs: Vec::new(),
+          //                 trigger_defender: false,
+          //                 bomb_count: attacker.amt_of_emps,
+          //             },
+          //         );
+          //         let hut_triggered = spawn_result.is_some();
 
-                let result_type = if hut_triggered {
-                    ResultType::SpawnHutDefender
-                } else {
-                    ResultType::Nothing
-                };
+          //         let result_type = if hut_triggered {
+          //             ResultType::SpawnHutDefender
+          //         } else {
+          //             ResultType::Nothing
+          //         };
 
-                let response = SocketResponse {
-                    frame_number: socket_request.frame_number,
-                    result_type,
-                    is_alive: None,
-                    attacker_health: None,
-                    exploded_mines: None,
-                    // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
-                    defender_damaged: None,
-                    damaged_buildings: None,
-                    hut_triggered,
-                    hut_defender: spawn_result,
-                    total_damage_percentage: Some(_game_state.damage_percentage),
-                    is_sync: false,
-                    is_game_over: false,
-                    message: Some(String::from("Movement Response")),
-                };
-                return Some(Ok(response));
-            }
-        }
+          //         let response = SocketResponse {
+          //             frame_number: socket_request.frame_number,
+          //             result_type,
+          //             is_alive: None,
+          //             attacker_health: None,
+          //             exploded_mines: None,
+          //             // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
+          //             defender_damaged: None,
+          //             damaged_buildings: None,
+          //             hut_triggered,
+          //             hut_defender: spawn_result,
+          //             total_damage_percentage: Some(_game_state.damage_percentage),
+          //             is_sync: false,
+          //             is_game_over: false,
+          //             message: Some(String::from("Movement Response")),
+          //         };
+          //         return Some(Ok(response));
+          //     }
+          // }
     }
     None
 }

@@ -1,4 +1,3 @@
-use crate::api::attack::util::get_hut_defender;
 use crate::constants::BANK_BUILDING_NAME;
 use crate::error::DieselError;
 use crate::models::{
@@ -774,11 +773,6 @@ pub(crate) fn upgrade_building(
         bank_map_space_id,
         true,
     );
-
-    if next_level_block.1 == "Defender_Hut" {
-        let hut_defender = get_hut_defender(conn, player_id).unwrap();
-        upgrade_defender(player_id, conn, hut_defender.block_id, false)?;
-    }
 
     let building_map_space_id = get_building_map_space_id(conn, &id_of_map, &next_level_block.0)?;
     Ok(building_map_space_id)

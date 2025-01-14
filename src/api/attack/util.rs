@@ -673,8 +673,11 @@ pub fn get_hut_defender(
     user_id: i32,
 ) -> Result<HashMap<i32, DefenderDetails>> {
     let joined_table = block_type::table
-        .filter(block_type::category.eq(BlockCategory::Defender))
-        .inner_join(defender_type::table.on(block_type::category_id.eq(defender_type::id)))
+        .inner_join(
+            defender_type::table.on(block_type::category_id
+                .eq(defender_type::id)
+                .and(block_type::category.eq(BlockCategory::Defender))),
+        )
         .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)));
     let hut_defenders: Vec<DefenderDetails> = joined_table
         .load::<(BlockType, DefenderType, Prop)>(conn)

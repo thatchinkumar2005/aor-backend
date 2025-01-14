@@ -28,7 +28,7 @@ pub struct SocketResponse {
     // pub triggered_defenders: Option<Vec<DefenderResponse>>,
     pub defender_damaged: Option<Vec<DefenderResponse>>,
     pub hut_triggered: bool,
-    pub hut_defender: Option<DefenderDetails>,
+    pub hut_defender: Option<Vec<DefenderDetails>>,
     pub damaged_buildings: Option<Vec<BuildingResponse>>,
     pub total_damage_percentage: Option<f32>,
     pub is_sync: bool,
@@ -46,7 +46,6 @@ pub enum ActionType {
     Idle,
     Terminate,
     SelfDestruct,
-    SpawnHutDefender,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

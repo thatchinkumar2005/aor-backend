@@ -11,9 +11,7 @@ use crate::api::util::HistoryboardQuery;
 use crate::constants::{GAME_AGE_IN_MINUTES, MAX_BOMBS_PER_ATTACK};
 use crate::models::{AttackerType, User};
 use crate::validator::state::State;
-use crate::validator::util::{
-    BombType, BuildingDetails, DefenderDetails, HutDefenderDetails, MineDetails,
-};
+use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
 use crate::validator::util::{Coords, SourceDestXY};
 use actix_rt;
 use actix_web::error::ErrorBadRequest;

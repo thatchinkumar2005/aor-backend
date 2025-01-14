@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 use crate::api::attack::socket::DefenderResponse;
@@ -60,6 +60,7 @@ pub struct HutDefenderDetails {
     pub hut_defenders: HashMap<i32, DefenderDetails>,
     pub hut_triggered: HashMap<i32, bool>,
     pub hut_defenders_count: HashMap<i32, i32>,
+    pub hut_defender_latest_time: HashMap<i32, usize>,
 }
 
 // Structs for sending response
@@ -143,5 +144,53 @@ pub fn send_terminate_game_message(frame_number: i32, message: String) -> Socket
         is_sync: false,
         is_game_over: true,
         message: Some(message),
+    }
+}
+
+pub fn select_side_hut_defender(
+    shadow_tiles: &Vec<(i32, i32)>,
+    roads: &HashSet<(i32, i32)>,
+    hut_building: &BuildingDetails,
+    attacker: &Attacker,
+    hut_defender: &DefenderDetails,
+    i: usize,
+) -> Option<DefenderDetails> {
+    let tile2 = (
+        shadow_tiles[shadow_tiles.len() - 2].0 + 1,
+        shadow_tiles[shadow_tiles.len() - 2].1,
+    );
+    let tile4 = (
+        shadow_tiles[(2 * hut_building.width - 1) as usize].0,
+        shadow_tiles[(2 * hut_building.width - 1) as usize].1 + 1,
+    );
+    let tile3 = (
+        shadow_tiles[hut_building.width as usize].0,
+        shadow_tiles[hut_building.width as usize].1 - 1,
+    );
+    let tile1 = (shadow_tiles[1].0 - 1, shadow_tiles[1].1);
+
+    let mut hut_defender_clone = hut_defender.clone();
+    if roads.contains(&tile2) {
+        hut_defender_clone.defender_pos.x = tile2.0;
+        hut_defender_clone.defender_pos.y = tile2.1;
+        hut_defender_clone.target_id = Some((i) as f32 / attacker.attacker_speed as f32);
+        Some(hut_defender_clone)
+    } else if roads.contains(&tile4) {
+        hut_defender_clone.defender_pos.x = tile4.0;
+        hut_defender_clone.defender_pos.y = tile4.1;
+        hut_defender_clone.target_id = Some((i) as f32 / attacker.attacker_speed as f32);
+        Some(hut_defender_clone)
+    } else if roads.contains(&tile3) {
+        hut_defender_clone.defender_pos.x = tile3.0;
+        hut_defender_clone.defender_pos.y = tile3.1;
+        hut_defender_clone.target_id = Some((i) as f32 / attacker.attacker_speed as f32);
+        Some(hut_defender_clone)
+    } else if roads.contains(&tile1) {
+        hut_defender_clone.defender_pos.x = tile1.0;
+        hut_defender_clone.defender_pos.y = tile1.1;
+        hut_defender_clone.target_id = Some((i) as f32 / attacker.attacker_speed as f32);
+        Some(hut_defender_clone)
+    } else {
+        None
     }
 }
