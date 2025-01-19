@@ -19,7 +19,9 @@ use crate::models::{
     EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop,
     User,
 };
-use crate::schema::{available_blocks, block_type, building_type, defender_type, prop, user};
+use crate::schema::{
+    available_blocks, block_type, building_type, defender_type, map_spaces, prop, user,
+};
 use crate::util::function;
 use crate::validator::util::Coords;
 use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
@@ -673,7 +675,7 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
 
 pub fn get_hut_defender(
     conn: &mut PgConnection,
-    user_id: i32,
+    map_id: i32,
 ) -> Result<HashMap<i32, DefenderDetails>> {
     let joined_table = block_type::table
         .filter(block_type::category.eq(BlockCategory::Defender))
@@ -703,22 +705,23 @@ pub fn get_hut_defender(
         })
         .collect();
 
-    let joined_table = available_blocks::table
+    let joined_table = map_spaces::table
         .inner_join(block_type::table)
         .filter(block_type::category.eq(BlockCategory::Building))
         .inner_join(building_type::table.on(block_type::category_id.eq(building_type::id)))
-        .filter(available_blocks::user_id.eq(user_id))
-        .filter(building_type::name.eq("Defender_Hut"));
+        .filter(building_type::name.eq("Defender_Hut"))
+        .filter(map_spaces::map_id.eq(map_id))
+        .filter(building_type::id.ne(ROAD_ID));
 
     let huts: Vec<(i32, i32)> = joined_table
-        .load::<(AvailableBlocks, BlockType, BuildingType)>(conn)
+        .load::<(MapSpaces, BlockType, BuildingType)>(conn)
         .map_err(|err| DieselError {
             table: "building_type",
             function: function!(),
             error: err,
         })?
         .into_iter()
-        .map(|(_, block_type, building_type)| (block_type.id, building_type.level))
+        .map(|(map_spaces, _, building_type)| (map_spaces.id, building_type.level))
         .collect();
 
     let mut hut_defenders_res: HashMap<i32, DefenderDetails> = HashMap::new();
