@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::api::attack::socket::DefenderResponse;
@@ -57,10 +57,10 @@ pub struct DefenderDetails {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct HutDefenderDetails {
-    pub hut_defenders: HashMap<i32, DefenderDetails>,
-    pub hut_triggered: HashMap<i32, bool>,
-    pub hut_defenders_count: HashMap<i32, i32>,
-    pub hut_defender_latest_time: HashMap<i32, u128>,
+    pub hut_defender: DefenderDetails,
+    pub hut_triggered: bool,
+    pub hut_defenders_count: i32,
+    pub hut_defender_latest_time: Option<u128>,
 }
 
 // Structs for sending response

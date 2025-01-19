@@ -28,7 +28,7 @@ pub struct State {
     pub damage_percentage: f32,
     pub artifacts: i32,
     pub defenders: Vec<DefenderDetails>,
-    pub hut: HutDefenderDetails,
+    pub hut: HashMap<i32, HutDefenderDetails>,
     pub mines: Vec<MineDetails>,
     pub buildings: Vec<BuildingDetails>,
     pub total_hp_buildings: i32,
@@ -44,20 +44,20 @@ impl State {
         mines: Vec<MineDetails>,
         buildings: Vec<BuildingDetails>,
     ) -> State {
-        let mut hut_triggered = HashMap::new();
-        let mut hut_defenders_count = HashMap::new();
-        let hut_defender_latest_time = HashMap::new();
+        let mut hut = HashMap::new();
         for building in buildings.clone() {
             if building.name == "Defender_Hut" {
                 //get defender_level for the hut
                 let defender_level = hut_defenders.get(&building.block_id).unwrap().level;
 
-                hut_triggered.insert(building.block_id, false);
-
-                hut_defenders_count.insert(
-                    building.block_id,
-                    LEVEL[(defender_level - 1) as usize].hut.defenders_limit,
-                );
+                let defenders_count = LEVEL[(defender_level - 1) as usize].hut.defenders_limit;
+                let hut_defender_details = HutDefenderDetails {
+                    hut_defender: hut_defenders.get(&building.block_id).unwrap().clone(),
+                    hut_triggered: false,
+                    hut_defenders_count: defenders_count,
+                    hut_defender_latest_time: None,
+                };
+                hut.insert(building.block_id, hut_defender_details);
             }
         }
         State {
@@ -75,12 +75,7 @@ impl State {
             damage_percentage: 0.0,
             artifacts: 0,
             defenders,
-            hut: HutDefenderDetails {
-                hut_defenders,
-                hut_triggered,
-                hut_defenders_count,
-                hut_defender_latest_time,
-            },
+            hut,
             mines,
             buildings,
             total_hp_buildings: 0,
@@ -219,11 +214,12 @@ impl State {
                     + (hut_building.tile.y - new_pos.y).abs();
 
                 if distance <= hut_building.range {
-                    if let Some(is_triggered) = self.hut.hut_triggered.get(&hut_building.block_id) {
-                        if !is_triggered {
+                    if let Some(hut) = self.hut.get_mut(&hut_building.block_id) {
+                        if !hut.hut_triggered {
                             // Hut triggered
                             log::info!("In range!");
-                            self.hut.hut_triggered.insert(hut_building.block_id, true);
+                            //trigger hut
+                            hut.hut_triggered = true;
                         }
                     }
                 }
@@ -290,18 +286,14 @@ impl State {
                     }
                 }
                 //see if hut is triggered
-                let hut_triggered = self
-                    .hut
-                    .hut_triggered
-                    .get(&hut_building.block_id)
-                    .unwrap()
-                    .clone();
+                let hut_triggered = self.hut.get(&hut_building.block_id).unwrap().hut_triggered;
 
                 //if hut is triggered and hut defenders are > 0, get the hut defender.
                 let time_elapsed = if let Some(time_stamp) = self
                     .hut
-                    .hut_defender_latest_time
                     .get(&hut_building.block_id)
+                    .unwrap()
+                    .hut_defender_latest_time
                 {
                     let start = SystemTime::now();
                     let now = start
@@ -309,17 +301,17 @@ impl State {
                         .expect("Time went backwards");
                     let time_interval = hut_building.frequency as u128;
                     //check if time elapsed is greater than time stamp.
-                    now.as_millis() >= *time_stamp + time_interval
+                    now.as_millis() >= time_stamp + time_interval
                 } else {
                     true
                 };
                 if hut_triggered
                     && self
                         .hut
-                        .hut_defenders_count
                         .get(&hut_building.block_id)
-                        .unwrap_or(&0)
-                        > &0
+                        .unwrap()
+                        .hut_defenders_count
+                        > 0
                     && time_elapsed
                 {
                     if let Some(hut_defender) = select_side_hut_defender(
@@ -327,7 +319,7 @@ impl State {
                         roads,
                         &hut_building,
                         &attacker,
-                        &self.hut.hut_defenders.get(&hut_building.block_id).unwrap(),
+                        &self.hut.get(&hut_building.block_id).unwrap().hut_defender,
                         i,
                     ) {
                         //push it to state.
@@ -341,18 +333,20 @@ impl State {
                             .duration_since(UNIX_EPOCH)
                             .expect("Time went backwards");
                         self.hut
-                            .hut_defender_latest_time
-                            .insert(hut_building.block_id, now.as_millis() as u128);
+                            .get_mut(&hut_building.block_id)
+                            .unwrap()
+                            .hut_defender_latest_time = Some(now.as_millis());
 
                         //update hut_defenders count.
                         let curr_count = self
                             .hut
-                            .hut_defenders_count
                             .get(&hut_building.block_id)
-                            .unwrap_or(&0);
+                            .unwrap()
+                            .hut_defenders_count;
                         self.hut
-                            .hut_defenders_count
-                            .insert(hut_building.block_id, curr_count - 1);
+                            .get_mut(&hut_building.block_id)
+                            .unwrap()
+                            .hut_defenders_count = curr_count - 1;
                     }
                 }
             }
