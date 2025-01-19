@@ -449,11 +449,6 @@ fn get_defender_types(
                             range: 0,
                             frequency: 0,
                         },
-                        Prop {
-                            id: 0,
-                            range: 0,
-                            frequency: 0,
-                        },
                     ));
 
                 DefenderTypeResponse {
@@ -556,11 +551,6 @@ fn get_mine_types(player_id: i32, conn: &mut PgConnection) -> Result<Vec<MineTyp
                             id: 0,
                             category: BlockCategory::Mine,
                             category_id: 0,
-                        },
-                        Prop {
-                            id: 0,
-                            range: 0,
-                            frequency: 0,
                         },
                         Prop {
                             id: 0,
