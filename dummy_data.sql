@@ -263,6 +263,7 @@ COPY public.available_blocks FROM stdin;
 \N	1	\N	3	emp	25
 58	1	\N	\N	block	26
 61	1	\N	\N	block	27
+58	1	\N	\N	block	28
 \.
 
 COPY public.map_spaces FROM stdin;
@@ -439,6 +440,7 @@ COPY public.map_spaces FROM stdin;
 171	1	1	34	15
 172	1	36	20	58
 173	1	20	36	61
+174	1	36	10	58
 \.
 
 COPY public.artifact FROM stdin;

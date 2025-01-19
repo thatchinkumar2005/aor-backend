@@ -19,9 +19,7 @@ use crate::models::{
     EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop,
     User,
 };
-use crate::schema::{
-    available_blocks, block_type, building_type, defender_type, map_spaces, prop, user,
-};
+use crate::schema::{block_type, building_type, defender_type, map_spaces, prop, user};
 use crate::util::function;
 use crate::validator::util::Coords;
 use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
