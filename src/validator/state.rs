@@ -308,6 +308,7 @@ impl State {
                 if hut_triggered
                     && self.hut.get(&hut_building.id).unwrap().hut_defenders_count > 0
                     && time_elapsed
+                    && hut_building.current_hp > 0
                 {
                     if let Some(hut_defender) = select_side_hut_defender(
                         &shadow_tiles,
