@@ -1,9 +1,10 @@
 use std::{
     cmp::max,
     collections::{HashMap, HashSet},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::constants::{BOMB_DAMAGE_MULTIPLIER, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE};
+use crate::constants::{BOMB_DAMAGE_MULTIPLIER, LEVEL, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE};
 use crate::{
     api::attack::socket::{BuildingResponse, DefenderResponse},
     validator::util::{
@@ -14,7 +15,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::BombType;
+use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -27,6 +28,7 @@ pub struct State {
     pub damage_percentage: f32,
     pub artifacts: i32,
     pub defenders: Vec<DefenderDetails>,
+    pub hut: HashMap<i32, HutDefenderDetails>,
     pub mines: Vec<MineDetails>,
     pub buildings: Vec<BuildingDetails>,
     pub total_hp_buildings: i32,
@@ -38,9 +40,26 @@ impl State {
         attacker_user_id: i32,
         defender_user_id: i32,
         defenders: Vec<DefenderDetails>,
+        hut_defenders: HashMap<i32, DefenderDetails>,
         mines: Vec<MineDetails>,
         buildings: Vec<BuildingDetails>,
     ) -> State {
+        let mut hut = HashMap::new();
+        for building in buildings.clone() {
+            if building.name == "Defender_Hut" {
+                //get defender_level for the hut
+                let defender_level = hut_defenders.get(&building.id).unwrap().level;
+
+                let defenders_count = LEVEL[(defender_level - 1) as usize].hut.defenders_limit;
+                let hut_defender_details = HutDefenderDetails {
+                    hut_defender: hut_defenders.get(&building.id).unwrap().clone(),
+                    hut_triggered: false,
+                    hut_defenders_count: defenders_count,
+                    hut_defender_latest_time: None,
+                };
+                hut.insert(building.id, hut_defender_details);
+            }
+        }
         State {
             frame_no: 0,
             attacker_user_id,
@@ -56,6 +75,7 @@ impl State {
             damage_percentage: 0.0,
             artifacts: 0,
             defenders,
+            hut,
             mines,
             buildings,
             total_hp_buildings: 0,
@@ -182,6 +202,29 @@ impl State {
 
             let new_pos = coord;
 
+            let hut_buildings: Vec<BuildingDetails> = self
+                .buildings
+                .iter()
+                .filter(|&r| r.name == "Defender_Hut")
+                .cloned()
+                .collect();
+
+            for hut_building in hut_buildings {
+                let distance = (hut_building.tile.x - new_pos.x).abs()
+                    + (hut_building.tile.y - new_pos.y).abs();
+
+                if distance <= hut_building.range {
+                    if let Some(hut) = self.hut.get_mut(&hut_building.id) {
+                        if !hut.hut_triggered {
+                            // Hut triggered
+                            log::info!("In range!");
+                            //trigger hut
+                            hut.hut_triggered = true;
+                        }
+                    }
+                }
+            }
+
             for defender in self.defenders.iter_mut() {
                 if defender.target_id.is_none()
                     && defender.is_alive
@@ -214,6 +257,94 @@ impl State {
             bomb_count: attacker.bomb_count,
         };
         Some(attacker_result)
+    }
+
+    pub fn spawn_hut_defender(
+        &mut self,
+        roads: &HashSet<(i32, i32)>,
+        attacker_current: Attacker,
+    ) -> Option<Vec<DefenderDetails>> {
+        let attacker = attacker_current.clone();
+        let hut_buildings: Vec<&BuildingDetails> = self
+            .buildings
+            .iter()
+            .filter(|&r| r.name == "Defender_Hut")
+            .collect();
+
+        let mut response = Vec::new();
+        for (i, _coord) in attacker_current
+            .path_in_current_frame
+            .into_iter()
+            .enumerate()
+        {
+            for &hut_building in &hut_buildings {
+                //get shadow tile for each hut.
+                let mut shadow_tiles: Vec<(i32, i32)> = Vec::new();
+                for i in 0..hut_building.width {
+                    for j in 0..hut_building.width {
+                        shadow_tiles.push((hut_building.tile.x + i, hut_building.tile.y + j));
+                    }
+                }
+                //see if hut is triggered
+                let hut_triggered = self.hut.get(&hut_building.id).unwrap().hut_triggered;
+
+                //if hut is triggered and hut defenders are > 0, get the hut defender.
+                let time_elapsed = if let Some(time_stamp) = self
+                    .hut
+                    .get(&hut_building.id)
+                    .unwrap()
+                    .hut_defender_latest_time
+                {
+                    let start = SystemTime::now();
+                    let now = start
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards");
+                    let time_interval = hut_building.frequency as u128;
+                    //check if time elapsed is greater than time stamp.
+                    now.as_millis() >= time_stamp + time_interval
+                } else {
+                    true
+                };
+                if hut_triggered
+                    && self.hut.get(&hut_building.id).unwrap().hut_defenders_count > 0
+                    && time_elapsed
+                    && hut_building.current_hp > 0
+                {
+                    if let Some(hut_defender) = select_side_hut_defender(
+                        &shadow_tiles,
+                        roads,
+                        &hut_building,
+                        &attacker,
+                        &self.hut.get(&hut_building.id).unwrap().hut_defender,
+                        i,
+                    ) {
+                        //push it to state.
+                        self.defenders.push(hut_defender.clone());
+                        //push it to frontend response.
+                        response.push(hut_defender);
+
+                        //update time
+                        let start = SystemTime::now();
+                        let now = start
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards");
+                        self.hut
+                            .get_mut(&hut_building.id)
+                            .unwrap()
+                            .hut_defender_latest_time = Some(now.as_millis());
+
+                        //update hut_defenders count.
+                        let curr_count =
+                            self.hut.get(&hut_building.id).unwrap().hut_defenders_count;
+                        self.hut
+                            .get_mut(&hut_building.id)
+                            .unwrap()
+                            .hut_defenders_count = curr_count - 1;
+                    }
+                }
+            }
+        }
+        return Some(response);
     }
 
     pub fn place_bombs(

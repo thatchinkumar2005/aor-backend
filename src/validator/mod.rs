@@ -31,7 +31,6 @@ pub fn game_handler(
     let defender_damaged_result: DefenderReturnType;
     let exploded_mines_result: Vec<MineDetails>;
     let buildings_damaged_result: Vec<BuildingResponse>;
-
     match socket_request.action_type {
         ActionType::PlaceAttacker => {
             _game_state.update_frame_number(socket_request.frame_number);
@@ -92,6 +91,8 @@ pub fn game_handler(
                 // triggered_defenders: None,
                 defender_damaged: None,
                 damaged_buildings: None,
+                hut_triggered: false,
+                hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -104,6 +105,7 @@ pub fn game_handler(
             if let Some(attacker_id) = socket_request.attacker_id {
                 let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
                 let attacker_delta: Vec<Coords> = socket_request.attacker_path;
+                let attacker_delta_clone = attacker_delta.clone();
 
                 let attacker_result = _game_state.attacker_movement(
                     socket_request.frame_number,
@@ -120,7 +122,7 @@ pub fn game_handler(
                     },
                 );
 
-                let attacker_result_clone = attacker_result.clone();
+                let attacker_result_clone = attacker_result.clone().unwrap();
 
                 defender_damaged_result =
                     _game_state.defender_movement(attacker_delta.clone(), _shortest_path);
@@ -150,15 +152,15 @@ pub fn game_handler(
                     _game_log.e.push(event_response.clone());
                 }
 
-                let mut bool_temp = false;
-                if attacker_result_clone.unwrap().trigger_defender {
-                    bool_temp = true;
-                }
-                let result_type = if bool_temp {
-                    ResultType::DefendersDamaged
-                } else {
-                    ResultType::Nothing
-                };
+                // let mut bool_temp = false;
+                // if attacker_result_clone.trigger_defender {
+                //     bool_temp = true;
+                // }
+                // let result_type = if attacker_result_clone.trigger_defender {
+                //     ResultType::DefendersDamaged
+                // } else {
+                //     ResultType::Nothing
+                // };
 
                 let mut is_attacker_alive = true;
 
@@ -175,7 +177,33 @@ pub fn game_handler(
                     )));
                 }
 
-                return Some(Ok(SocketResponse {
+                let spawn_result = _game_state
+                    .spawn_hut_defender(
+                        _roads,
+                        Attacker {
+                            id: attacker.id,
+                            path_in_current_frame: attacker_delta_clone.clone(),
+                            attacker_pos: socket_request.start_position.unwrap(),
+                            attacker_health: attacker.max_health,
+                            attacker_speed: attacker.speed,
+                            bombs: Vec::new(),
+                            trigger_defender: false,
+                            bomb_count: attacker.amt_of_emps,
+                        },
+                    )
+                    .unwrap();
+
+                let hut_triggered = !spawn_result.is_empty();
+
+                let result_type = if hut_triggered {
+                    ResultType::SpawnHutDefender
+                } else if attacker_result_clone.trigger_defender {
+                    ResultType::DefendersDamaged
+                } else {
+                    ResultType::Nothing
+                };
+
+                let response = SocketResponse {
                     frame_number: socket_request.frame_number,
                     result_type,
                     is_alive: Some(is_attacker_alive),
@@ -184,11 +212,14 @@ pub fn game_handler(
                     // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
                     defender_damaged: Some(defender_damaged_result.clone().defender_response),
                     damaged_buildings: None,
+                    hut_triggered,
+                    hut_defenders: Some(spawn_result),
                     total_damage_percentage: Some(_game_state.damage_percentage),
                     is_sync: false,
                     is_game_over: false,
                     message: Some(String::from("Movement Response")),
-                }));
+                };
+                return Some(Ok(response));
             }
         }
         ActionType::IsMine => {
@@ -231,6 +262,8 @@ pub fn game_handler(
                 // triggered_defenders: None,
                 defender_damaged: None,
                 damaged_buildings: None,
+                hut_triggered: false,
+                hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -307,6 +340,8 @@ pub fn game_handler(
                 // triggered_defenders: None,
                 defender_damaged: None,
                 damaged_buildings: Some(buildings_damaged_result),
+                hut_triggered: false,
+                hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -324,6 +359,8 @@ pub fn game_handler(
                 // triggered_defenders: None,
                 defender_damaged: None,
                 damaged_buildings: None,
+                hut_triggered: false,
+                hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
@@ -340,6 +377,8 @@ pub fn game_handler(
                 // triggered_defenders: None,
                 defender_damaged: None,
                 damaged_buildings: None,
+                hut_triggered: false,
+                hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: true,
@@ -359,6 +398,8 @@ pub fn game_handler(
                 // triggered_defenders: None,
                 defender_damaged: None,
                 damaged_buildings: None,
+                hut_triggered: false,
+                hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,

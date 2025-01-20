@@ -19,7 +19,7 @@ use crate::models::{
     EmpType, Game, LevelsFixture, MapLayout, MapSpaces, MineType, NewAttackerPath, NewGame, Prop,
     User,
 };
-use crate::schema::{prop, user};
+use crate::schema::{block_type, building_type, defender_type, map_spaces, prop, user};
 use crate::util::function;
 use crate::validator::util::Coords;
 use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
@@ -609,7 +609,7 @@ pub fn get_defenders(
 
     let mut defenders: Vec<DefenderDetails> = Vec::new();
 
-    for (_, _, defender_type, prop, map_space) in result.iter() {
+    for (_, block_type, defender_type, prop, map_space) in result.iter() {
         let (hut_x, hut_y) = (map_space.x_coordinate, map_space.y_coordinate);
         // let path: Vec<(i32, i32)> = vec![(hut_x, hut_y)];
         defenders.push(DefenderDetails {
@@ -622,6 +622,8 @@ pub fn get_defenders(
             damage_dealt: false,
             target_id: None,
             path_in_current_frame: Vec::new(),
+            block_id: block_type.id,
+            level: defender_type.level,
         })
     }
     // Sorted to handle multiple defenders attack same attacker at same frame
@@ -636,30 +638,98 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
         .inner_join(block_type::table)
         .filter(block_type::category.eq(BlockCategory::Building))
         .inner_join(building_type::table.on(block_type::category_id.eq(building_type::id)))
+        .inner_join(prop::table.on(building_type::prop_id.eq(prop::id)))
         .filter(map_spaces::map_id.eq(map_id))
         .filter(building_type::id.ne(ROAD_ID));
 
     let buildings: Vec<BuildingDetails> = joined_table
-        .load::<(MapSpaces, BlockType, BuildingType)>(conn)
+        .load::<(MapSpaces, BlockType, BuildingType, Prop)>(conn)
         .map_err(|err| DieselError {
             table: "map_spaces",
             function: function!(),
             error: err,
         })?
         .into_iter()
-        .map(|(map_space, _, building_type)| BuildingDetails {
-            id: map_space.id,
-            current_hp: building_type.hp,
-            total_hp: building_type.hp,
-            artifacts_obtained: 0,
-            tile: Coords {
-                x: map_space.x_coordinate,
-                y: map_space.y_coordinate,
+        .map(
+            |(map_space, block_type, building_type, prop)| BuildingDetails {
+                id: map_space.id,
+                current_hp: building_type.hp,
+                total_hp: building_type.hp,
+                artifacts_obtained: 0,
+                tile: Coords {
+                    x: map_space.x_coordinate,
+                    y: map_space.y_coordinate,
+                },
+                width: building_type.width,
+                name: building_type.name,
+                range: prop.range,
+                frequency: prop.frequency,
+                block_id: block_type.id,
             },
-            width: building_type.width,
-        })
+        )
         .collect();
     update_buidling_artifacts(conn, map_id, buildings)
+}
+
+pub fn get_hut_defender(
+    conn: &mut PgConnection,
+    map_id: i32,
+) -> Result<HashMap<i32, DefenderDetails>> {
+    let joined_table = block_type::table
+        .filter(block_type::category.eq(BlockCategory::Defender))
+        .inner_join(defender_type::table.on(block_type::category_id.eq(defender_type::id)))
+        .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)))
+        .filter(defender_type::name.eq("Hut_Defender"));
+    let hut_defenders: Vec<DefenderDetails> = joined_table
+        .load::<(BlockType, DefenderType, Prop)>(conn)
+        .map_err(|err| DieselError {
+            table: "defender_type",
+            function: function!(),
+            error: err,
+        })?
+        .into_iter()
+        .map(|(block_type, defender_type, prop)| DefenderDetails {
+            id: defender_type.id,
+            radius: prop.range,
+            speed: defender_type.speed,
+            damage: defender_type.damage,
+            defender_pos: Coords { x: 0, y: 0 },
+            is_alive: true,
+            damage_dealt: false,
+            target_id: None,
+            path_in_current_frame: Vec::new(),
+            block_id: block_type.id,
+            level: defender_type.level,
+        })
+        .collect();
+
+    let joined_table = map_spaces::table
+        .inner_join(block_type::table)
+        .filter(block_type::category.eq(BlockCategory::Building))
+        .inner_join(building_type::table.on(block_type::category_id.eq(building_type::id)))
+        .filter(building_type::name.eq("Defender_Hut"))
+        .filter(map_spaces::map_id.eq(map_id))
+        .filter(building_type::id.ne(ROAD_ID));
+
+    let huts: Vec<(i32, i32)> = joined_table
+        .load::<(MapSpaces, BlockType, BuildingType)>(conn)
+        .map_err(|err| DieselError {
+            table: "building_type",
+            function: function!(),
+            error: err,
+        })?
+        .into_iter()
+        .map(|(map_spaces, _, building_type)| (map_spaces.id, building_type.level))
+        .collect();
+
+    let mut hut_defenders_res: HashMap<i32, DefenderDetails> = HashMap::new();
+    for hut in huts {
+        if let Some(hut_defender) = hut_defenders.iter().find(|hd| hd.level == hut.1) {
+            hut_defenders_res.insert(hut.0, hut_defender.clone());
+        }
+    }
+    log::info!("{:?}", hut_defenders_res);
+    Ok(hut_defenders_res)
 }
 
 pub fn get_bomb_types(conn: &mut PgConnection) -> Result<Vec<BombType>> {
