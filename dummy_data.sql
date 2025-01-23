@@ -229,6 +229,9 @@ COPY public.block_type FROM stdin;
 61	\N	\N	building	49
 62	\N	\N	building	50
 63	\N	\N	building	51
+64	10	\N	defender	0
+65	11	\N	defender	0
+67	12	\N	defender	0
 \.
 
 COPY public.available_blocks FROM stdin;
