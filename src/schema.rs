@@ -79,6 +79,24 @@ diesel::table! {
 }
 
 diesel::table! {
+    challenges (id) {
+        id -> Int4,
+        name -> Varchar,
+        user_id -> Int4,
+        map_id -> Int4,
+    }
+}
+
+diesel::table! {
+    challenges_responses (challenge_id) {
+        user_id -> Int4,
+        challenge_id -> Int4,
+        map_id -> Int4,
+        score -> Int4,
+    }
+}
+
+diesel::table! {
     defender_type (id) {
         id -> Int4,
         speed -> Int4,
@@ -216,6 +234,11 @@ diesel::joinable!(available_blocks -> block_type (block_type_id));
 diesel::joinable!(available_blocks -> emp_type (emp_type_id));
 diesel::joinable!(available_blocks -> user (user_id));
 diesel::joinable!(building_type -> prop (prop_id));
+diesel::joinable!(challenges -> map_layout (map_id));
+diesel::joinable!(challenges -> user (user_id));
+diesel::joinable!(challenges_responses -> challenges (challenge_id));
+diesel::joinable!(challenges_responses -> map_layout (map_id));
+diesel::joinable!(challenges_responses -> user (user_id));
 diesel::joinable!(defender_type -> prop (prop_id));
 diesel::joinable!(game -> map_layout (map_layout_id));
 diesel::joinable!(level_constraints -> block_type (block_id));
@@ -235,6 +258,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     available_blocks,
     block_type,
     building_type,
+    challenges,
+    challenges_responses,
     defender_type,
     emp_type,
     game,
