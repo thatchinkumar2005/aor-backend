@@ -126,6 +126,13 @@ pub struct Coords {
     pub y: i32,
 }
 
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash, Copy, Deserialize)]
+pub struct Path {
+    pub x: i32,
+    pub y: i32,
+    pub l: i32,
+}
+
 #[derive(Serialize, Clone, Copy)]
 pub struct SourceDest {
     pub source: Coords,

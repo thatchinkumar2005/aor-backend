@@ -13,7 +13,7 @@ use crate::api::util::HistoryboardQuery;
 use crate::constants::{GAME_AGE_IN_MINUTES, MAX_BOMBS_PER_ATTACK};
 use crate::models::{AttackerType, User};
 use crate::validator::state::State;
-use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
+use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails, Path};
 use crate::validator::util::{Coords, SourceDestXY};
 use actix_rt;
 use actix_web::error::ErrorBadRequest;
@@ -281,7 +281,7 @@ async fn socket_handler(
     let mut conn = pool.get().map_err(|err| error::handle_error(err.into()))?;
 
     let shortest_paths = web::block(move || {
-        Ok(run_shortest_paths(&mut conn, map_id)?) as anyhow::Result<HashMap<SourceDestXY, Coords>>
+        Ok(run_shortest_paths(&mut conn, map_id)?) as anyhow::Result<HashMap<SourceDestXY, Path>>
     })
     .await?
     .map_err(|err| error::handle_error(err.into()))?;

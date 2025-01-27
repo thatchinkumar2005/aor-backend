@@ -33,6 +33,8 @@ use chrono::Local;
 use petgraph::data::Build;
 use serde::{Deserialize, Serialize};
 
+use super::util::{select_side_hut_defender, Bomb, BombType, Companion, HutDefenderDetails, Path};
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
     pub frame_no: i32,
@@ -451,13 +453,18 @@ impl State {
         return Some(response);
     }
 
-    pub fn move_companion(&mut self, roads: &HashSet<(i32, i32)>) {
+    pub fn move_companion(
+        &mut self,
+        roads: &HashSet<(i32, i32)>,
+        shortest_path: &HashMap<SourceDestXY, Path>,
+    ) {
         log::info!("Companion update");
         let comapanion_clone = self.companion.clone().unwrap();
 
         let buildings = self.buildings.clone();
         let mut high_prior_building: (Option<BuildingDetails>, i32) = (None, 0);
         let mut second_prior_building: (Option<BuildingDetails>, i32) = (None, 0);
+        let mut high_prior_tile: (Option<(i32, i32)>, i32) = (None, 0);
         for building in buildings {
             let mut visible = false;
             if building.current_hp == 0 {
@@ -530,10 +537,38 @@ impl State {
                 }
             }
         }
-        // if high_prior_building.0.is_some() {
-        //     let building = high_prior_building.0.unwrap();
-        //     let building_road_tiles = get_roads_around_building(&building, roads);
-        // }
+        if high_prior_building.0.is_some() {
+            let building = high_prior_building.0.unwrap();
+            let building_road_tiles = get_roads_around_building(&building, roads);
+
+            for road_tile in building_road_tiles {
+                let next_hop = shortest_path.get(&SourceDestXY {
+                    source_x: comapanion_clone.companion_pos.x,
+                    source_y: comapanion_clone.companion_pos.y,
+                    dest_x: road_tile.0,
+                    dest_y: road_tile.1,
+                });
+                if next_hop.is_none() {
+                    continue;
+                }
+                let next_hop = next_hop.unwrap();
+
+                let is_defending_building =
+                    building.name == "Defender_Hut" || building.name == "Sentry";
+
+                let priority = if is_defending_building {
+                    companion_priority.defender_buildings
+                } else {
+                    companion_priority.buildings
+                };
+
+                let priority = priority + 1 / next_hop.l;
+                if priority > high_prior_tile.1 {
+                    high_prior_tile.0 = Some((road_tile.0, road_tile.1));
+                    high_prior_tile.1 = priority;
+                }
+            }
+        }
     }
 
     pub fn place_bombs(

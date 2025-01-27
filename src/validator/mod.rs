@@ -10,7 +10,7 @@ use crate::{
     validator::util::{Coords, SourceDestXY},
 };
 use anyhow::{Ok, Result};
-use util::Companion;
+use util::{Companion, Path};
 
 use self::{
     state::State,
@@ -25,7 +25,7 @@ pub fn game_handler(
     attacker_type: &HashMap<i32, AttackerType>,
     socket_request: SocketRequest,
     _game_state: &mut State,
-    _shortest_path: &HashMap<SourceDestXY, Coords>,
+    _shortest_path: &HashMap<SourceDestXY, Path>,
     _roads: &HashSet<(i32, i32)>,
     _bomb_types: &Vec<BombType>,
     mut _game_log: &mut GameLog,
@@ -258,7 +258,7 @@ pub fn game_handler(
                     )
                     .unwrap();
 
-                let companion_res = _game_state.move_companion(_roads);
+                let companion_res = _game_state.move_companion(_roads, _shortest_path);
                 let hut_triggered = !spawn_result.is_empty();
 
                 let result_type = if hut_triggered {
