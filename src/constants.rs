@@ -13,6 +13,7 @@ pub const GAME_AGE_IN_MINUTES: usize = 3;
 pub const MATCH_MAKING_ATTEMPTS: i32 = 10;
 pub const PERCENTANGE_ARTIFACTS_OBTAINABLE: f32 = 0.3;
 pub const BOMB_DAMAGE_MULTIPLIER: f32 = 5.0;
+pub const COMPANION_BOT_RANGE: i32 = 5;
 
 pub struct HutLevelAttribute {
     pub defenders_limit: i32,
@@ -35,8 +36,19 @@ pub const LEVEL: [LevelAttributes; 3] = [
 ];
 
 pub const LIVES: i32 = 3;
+
+pub struct CompanionPriority {
+    pub defenders: i32,
+    pub defender_buildings: i32,
+    pub buildings: i32,
+}
+
+pub const companion_priority: CompanionPriority = CompanionPriority {
+    defenders: 3,
+    defender_buildings: 2,
+    buildings: 1,
+};
 pub const DAMAGE_PER_BULLET_LEVEL_1: i32 = 5;
 pub const DAMAGE_PER_BULLET_LEVEL_2: i32 = 7;
 pub const DAMAGE_PER_BULLET_LEVEL_3: i32 = 10;
 pub const BULLET_COLLISION_TIME: i32 = 2;
-

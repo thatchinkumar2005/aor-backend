@@ -39,6 +39,7 @@ pub struct SocketResponse {
 pub enum ActionType {
     IsMine,
     PlaceAttacker,
+    PlaceCompanion,
     MoveAttacker,
     PlaceBombs,
     Idle,
@@ -55,6 +56,7 @@ pub enum ResultType {
     BuildingsDamaged,
     GameOver,
     PlacedAttacker,
+    PlacedCompanion,
     Nothing,
 }
 

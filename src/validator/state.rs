@@ -21,7 +21,16 @@ use crate::{
         MineDetails, SourceDestXY,
     },
 };
+use crate::{
+    constants::{
+        companion_priority, BOMB_DAMAGE_MULTIPLIER, LEVEL, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
+    },
+    validator::util::get_roads_around_building,
+};
+
+use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
 use chrono::Local;
+use petgraph::data::Build;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -30,8 +39,10 @@ pub struct State {
     pub attacker_user_id: i32,
     pub defender_user_id: i32,
     pub attacker: Option<Attacker>,
+    pub companion: Option<Companion>,
     pub attacker_death_count: i32,
     pub bombs: BombType,
+    pub companion_bomb: BombType,
     pub damage_percentage: f32,
     pub artifacts: i32,
     pub defenders: Vec<DefenderDetails>,
@@ -94,8 +105,15 @@ impl State {
             attacker_user_id,
             defender_user_id,
             attacker: None,
+            companion: None,
             attacker_death_count: 0,
             bombs: BombType {
+                id: -1,
+                radius: 0,
+                damage: 0,
+                total_count: 0,
+            },
+            companion_bomb: BombType {
                 id: -1,
                 radius: 0,
                 damage: 0,
@@ -161,11 +179,24 @@ impl State {
             total_count: bombs,
         };
     }
+
+    pub fn set_companion_bombs(&mut self, bomb_type: BombType, bombs: i32) {
+        self.companion_bomb = BombType {
+            id: bomb_type.id,
+            radius: bomb_type.radius,
+            damage: bomb_type.damage,
+            total_count: bombs,
+        }
+    }
     pub fn place_attacker(&mut self, attacker: Attacker) {
         let attacker_position = attacker.attacker_pos;
         self.attacker = Some(attacker);
         self.activate_sentry(attacker_position);
         // println!("defnders: {:?}",self.defenders);
+    }
+
+    pub fn place_companion(&mut self, companion: Companion) {
+        self.companion = Some(companion);
     }
 
     pub fn mine_blast_update(&mut self, _id: i32, damage_to_attacker: i32) {
@@ -418,6 +449,91 @@ impl State {
             // }
         }
         return Some(response);
+    }
+
+    pub fn move_companion(&mut self, roads: &HashSet<(i32, i32)>) {
+        log::info!("Companion update");
+        let comapanion_clone = self.companion.clone().unwrap();
+
+        let buildings = self.buildings.clone();
+        let mut high_prior_building: (Option<BuildingDetails>, i32) = (None, 0);
+        let mut second_prior_building: (Option<BuildingDetails>, i32) = (None, 0);
+        for building in buildings {
+            let mut visible = false;
+            if building.current_hp == 0 {
+                continue;
+            }
+            let companion_start_x = comapanion_clone.companion_pos.x - comapanion_clone.range;
+            let companion_start_y = comapanion_clone.companion_pos.y - comapanion_clone.range;
+            let companion_end_x = comapanion_clone.companion_pos.x + comapanion_clone.range;
+            let companion_end_y = comapanion_clone.companion_pos.y + comapanion_clone.range;
+
+            let start_x = building.tile.x;
+            let start_y = building.tile.y;
+            let end_x = building.tile.x + building.width;
+            let end_y = building.tile.y + building.width;
+
+            let building_coords = vec![
+                (start_x, start_y),
+                (start_x, end_y),
+                (end_x, start_y),
+                (end_x, end_y),
+            ];
+            for coords in building_coords {
+                if !visible {
+                    if companion_start_x <= coords.0
+                        && companion_end_x >= coords.0
+                        && companion_start_y <= coords.1
+                        && companion_end_y >= coords.1
+                    {
+                        visible = true;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if visible {
+                let dist = (building.tile.x - comapanion_clone.companion_pos.x).abs()
+                    + (building.tile.y - comapanion_clone.companion_pos.y).abs();
+
+                let is_defending_building =
+                    building.name == "Defender_Hut" || building.name == "Sentry";
+
+                let priority = if is_defending_building {
+                    companion_priority.defender_buildings
+                } else {
+                    companion_priority.buildings
+                };
+
+                let priority = priority + 1 / dist;
+                if priority > high_prior_building.1 {
+                    high_prior_building.0 = Some(building.clone());
+                    high_prior_building.1 = priority;
+                }
+            } else {
+                let dist = (building.tile.x - comapanion_clone.companion_pos.x).abs()
+                    + (building.tile.y - comapanion_clone.companion_pos.y).abs();
+                let is_defending_building =
+                    building.name == "Defender_Hut" || building.name == "Sentry";
+
+                let priority = if is_defending_building {
+                    companion_priority.defender_buildings
+                } else {
+                    companion_priority.buildings
+                };
+
+                let priority = priority + 1 / dist;
+
+                if priority > second_prior_building.1 {
+                    second_prior_building.0 = Some(building.clone());
+                    second_prior_building.1 = priority;
+                }
+            }
+        }
+        // if high_prior_building.0.is_some() {
+        //     let building = high_prior_building.0.unwrap();
+        //     let building_road_tiles = get_roads_around_building(&building, roads);
+        // }
     }
 
     pub fn place_bombs(

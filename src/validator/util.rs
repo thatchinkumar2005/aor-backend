@@ -36,6 +36,19 @@ pub struct Attacker {
     pub bomb_count: i32,
 }
 
+#[derive(Serialize, Clone, Deserialize, Debug)]
+pub struct Companion {
+    pub id: i32,
+    pub companion_pos: Coords,
+    pub companion_health: i32,
+    pub companion_speed: i32,
+    pub path_in_current_frame: Vec<Coords>,
+    pub bombs: Vec<Bomb>,
+    pub trigger_defender: bool,
+    pub bomb_count: i32,
+    pub range: i32,
+}
+
 #[derive(Serialize, Clone, Deserialize)]
 pub struct IsTriggered {
     pub is_triggered: bool,
@@ -219,4 +232,11 @@ pub fn select_side_hut_defender(
     } else {
         None
     }
+}
+
+pub fn get_roads_around_building(
+    building: &BuildingDetails,
+    roads: &HashSet<(i32, i32)>,
+) -> Vec<(i32, i32)> {
+    return Vec::new();
 }

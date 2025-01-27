@@ -5,10 +5,12 @@ use crate::{
         socket::{ActionType, BaseItemsDamageResponse, ResultType, SocketRequest, SocketResponse},
         util::{EventResponse, GameLog},
     },
+    constants::COMPANION_BOT_RANGE,
     models::AttackerType,
     validator::util::{Coords, SourceDestXY},
 };
 use anyhow::{Ok, Result};
+use util::Companion;
 
 use self::{
     state::State,
@@ -115,6 +117,51 @@ pub fn game_handler(
                 )),
             }));
         }
+        ActionType::PlaceCompanion => {
+            _game_state.update_frame_number(socket_request.frame_number);
+
+            if let Some(attacker_id) = socket_request.attacker_id {
+                let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
+                _game_state.place_companion(Companion {
+                    id: attacker.id,
+                    path_in_current_frame: Vec::new(),
+                    companion_pos: socket_request.start_position.unwrap(),
+                    companion_health: attacker.max_health,
+                    companion_speed: attacker.speed,
+                    bombs: Vec::new(),
+                    trigger_defender: false,
+                    bomb_count: attacker.amt_of_emps,
+                    range: COMPANION_BOT_RANGE,
+                });
+
+                for bomb_type in _bomb_types {
+                    if let Some(bomb_id) = socket_request.bomb_id {
+                        if bomb_type.id == bomb_id {
+                            _game_state
+                                .set_companion_bombs(bomb_type.clone(), attacker.amt_of_emps);
+                        }
+                    }
+                }
+            }
+            return Some(Ok(SocketResponse {
+                frame_number: socket_request.frame_number,
+                result_type: ResultType::PlacedCompanion,
+                is_alive: Some(true),
+
+                attacker_health: None,
+                exploded_mines: None,
+                // triggered_defenders: None,
+                defender_damaged: None,
+                damaged_buildings: None,
+                hut_triggered: false,
+                hut_defenders: None,
+                total_damage_percentage: Some(_game_state.damage_percentage),
+                is_sync: false,
+                is_game_over: false,
+                message: Some(String::from("Placed companion")),
+            }));
+        }
+
         ActionType::MoveAttacker => {
             let shoot_bullets = _game_state.shoot_bullets();
             if _game_state.attacker.is_some() {
@@ -211,6 +258,7 @@ pub fn game_handler(
                     )
                     .unwrap();
 
+                let companion_res = _game_state.move_companion(_roads);
                 let hut_triggered = !spawn_result.is_empty();
 
                 let result_type = if hut_triggered {
