@@ -132,6 +132,10 @@ pub fn game_handler(
                     trigger_defender: false,
                     bomb_count: attacker.amt_of_emps,
                     range: COMPANION_BOT_RANGE,
+                    target_building: None,
+                    target_defender: None,
+                    target_tile: None,
+                    reached_dest: false,
                 });
 
                 for bomb_type in _bomb_types {

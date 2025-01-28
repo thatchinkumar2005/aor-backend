@@ -23,7 +23,7 @@ use crate::{
 };
 use crate::{
     constants::{
-        companion_priority, BOMB_DAMAGE_MULTIPLIER, LEVEL, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
+        BOMB_DAMAGE_MULTIPLIER, COMPANION_PRIORITY, LEVEL, LIVES, PERCENTANGE_ARTIFACTS_OBTAINABLE,
     },
     validator::util::get_roads_around_building,
 };
@@ -458,117 +458,6 @@ impl State {
         roads: &HashSet<(i32, i32)>,
         shortest_path: &HashMap<SourceDestXY, Path>,
     ) {
-        log::info!("Companion update");
-        let comapanion_clone = self.companion.clone().unwrap();
-
-        let buildings = self.buildings.clone();
-        let mut high_prior_building: (Option<BuildingDetails>, i32) = (None, 0);
-        let mut second_prior_building: (Option<BuildingDetails>, i32) = (None, 0);
-        let mut high_prior_tile: (Option<(i32, i32)>, i32) = (None, 0);
-        for building in buildings {
-            let mut visible = false;
-            if building.current_hp == 0 {
-                continue;
-            }
-            let companion_start_x = comapanion_clone.companion_pos.x - comapanion_clone.range;
-            let companion_start_y = comapanion_clone.companion_pos.y - comapanion_clone.range;
-            let companion_end_x = comapanion_clone.companion_pos.x + comapanion_clone.range;
-            let companion_end_y = comapanion_clone.companion_pos.y + comapanion_clone.range;
-
-            let start_x = building.tile.x;
-            let start_y = building.tile.y;
-            let end_x = building.tile.x + building.width;
-            let end_y = building.tile.y + building.width;
-
-            let building_coords = vec![
-                (start_x, start_y),
-                (start_x, end_y),
-                (end_x, start_y),
-                (end_x, end_y),
-            ];
-            for coords in building_coords {
-                if !visible {
-                    if companion_start_x <= coords.0
-                        && companion_end_x >= coords.0
-                        && companion_start_y <= coords.1
-                        && companion_end_y >= coords.1
-                    {
-                        visible = true;
-                    }
-                } else {
-                    break;
-                }
-            }
-            if visible {
-                let dist = (building.tile.x - comapanion_clone.companion_pos.x).abs()
-                    + (building.tile.y - comapanion_clone.companion_pos.y).abs();
-
-                let is_defending_building =
-                    building.name == "Defender_Hut" || building.name == "Sentry";
-
-                let priority = if is_defending_building {
-                    companion_priority.defender_buildings
-                } else {
-                    companion_priority.buildings
-                };
-
-                let priority = priority + 1 / dist;
-                if priority > high_prior_building.1 {
-                    high_prior_building.0 = Some(building.clone());
-                    high_prior_building.1 = priority;
-                }
-            } else {
-                let dist = (building.tile.x - comapanion_clone.companion_pos.x).abs()
-                    + (building.tile.y - comapanion_clone.companion_pos.y).abs();
-                let is_defending_building =
-                    building.name == "Defender_Hut" || building.name == "Sentry";
-
-                let priority = if is_defending_building {
-                    companion_priority.defender_buildings
-                } else {
-                    companion_priority.buildings
-                };
-
-                let priority = priority + 1 / dist;
-
-                if priority > second_prior_building.1 {
-                    second_prior_building.0 = Some(building.clone());
-                    second_prior_building.1 = priority;
-                }
-            }
-        }
-        if high_prior_building.0.is_some() {
-            let building = high_prior_building.0.unwrap();
-            let building_road_tiles = get_roads_around_building(&building, roads);
-
-            for road_tile in building_road_tiles {
-                let next_hop = shortest_path.get(&SourceDestXY {
-                    source_x: comapanion_clone.companion_pos.x,
-                    source_y: comapanion_clone.companion_pos.y,
-                    dest_x: road_tile.0,
-                    dest_y: road_tile.1,
-                });
-                if next_hop.is_none() {
-                    continue;
-                }
-                let next_hop = next_hop.unwrap();
-
-                let is_defending_building =
-                    building.name == "Defender_Hut" || building.name == "Sentry";
-
-                let priority = if is_defending_building {
-                    companion_priority.defender_buildings
-                } else {
-                    companion_priority.buildings
-                };
-
-                let priority = priority + 1 / next_hop.l;
-                if priority > high_prior_tile.1 {
-                    high_prior_tile.0 = Some((road_tile.0, road_tile.1));
-                    high_prior_tile.1 = priority;
-                }
-            }
-        }
     }
 
     pub fn place_bombs(

@@ -43,7 +43,7 @@ pub struct CompanionPriority {
     pub buildings: i32,
 }
 
-pub const companion_priority: CompanionPriority = CompanionPriority {
+pub const COMPANION_PRIORITY: CompanionPriority = CompanionPriority {
     defenders: 3,
     defender_buildings: 2,
     buildings: 1,
