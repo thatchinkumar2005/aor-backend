@@ -471,7 +471,7 @@ impl State {
             if let Some(current_target) = current_target {
                 match current_target {
                     CompanionTarget::Building => {
-                        let target_building = target_building.clone().unwrap();
+                        let target_building = target_building.unwrap();
                         for building in &self.buildings {
                             if building.id == target_building.id && building.current_hp <= 0 {
                                 companion_clone.reached_dest = false;
@@ -483,7 +483,7 @@ impl State {
                         }
                     }
                     CompanionTarget::Defender => {
-                        let target_defender = target_defender.clone().unwrap();
+                        let target_defender = target_defender.unwrap();
                         for defender in &self.defenders {
                             if defender.id == target_defender.id && !defender.is_alive {
                                 companion_clone.reached_dest = false;
@@ -494,10 +494,15 @@ impl State {
                         }
                     }
                 }
-                self.companion = Some(companion_clone.clone());
+            } else {
+                companion_clone.reached_dest = false;
+                companion_clone.target_building = None;
+                companion_clone.target_defender = None;
+                companion_clone.current_target = None;
             }
+            self.companion = Some(companion_clone.clone());
         } else {
-            //move to destination.
+            //get priorities if we don't have a target.
             if companion_clone.current_target.is_none() {
                 let priority = get_companion_priority(
                     &self.buildings,
@@ -525,6 +530,8 @@ impl State {
 
                 self.companion = Some(companion_clone.clone());
             }
+
+            //move to destination.
             let target_tile = companion_clone.target_tile.clone().unwrap();
         }
     }

@@ -399,10 +399,12 @@ pub fn get_companion_priority(
                 dest_x: road_tile.0,
                 dest_y: road_tile.1,
             });
-            if next_hop.is_none() {
-                continue;
-            }
-            let next_hop = next_hop.unwrap();
+            let default_next_hop = Path {
+                x: companion.companion_pos.x,
+                y: companion.companion_pos.y,
+                l: 1000000,
+            };
+            let next_hop = next_hop.unwrap_or(&default_next_hop);
 
             let is_defending_building =
                 building.name == "Defender_Hut" || building.name == "Sentry";
