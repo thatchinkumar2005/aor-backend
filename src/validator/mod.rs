@@ -135,6 +135,7 @@ pub fn game_handler(
                     target_building: None,
                     target_defender: None,
                     target_tile: None,
+                    current_target: None,
                     reached_dest: false,
                 });
 

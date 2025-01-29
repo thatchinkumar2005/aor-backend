@@ -17,8 +17,8 @@ use crate::{
 use crate::{
     api::attack::socket::{BuildingDamageResponse, DefenderDamageResponse, DefenderResponse},
     validator::util::{
-        Attacker, BuildingDetails, Coords, DefenderDetails, DefenderReturnType, InValidation,
-        MineDetails, SourceDestXY,
+        get_companion_priority, Attacker, BuildingDetails, CompanionTarget, Coords,
+        DefenderDetails, DefenderReturnType, InValidation, MineDetails, SourceDestXY,
     },
 };
 use crate::{
@@ -33,7 +33,7 @@ use chrono::Local;
 use petgraph::data::Build;
 use serde::{Deserialize, Serialize};
 
-use super::util::{select_side_hut_defender, Bomb, BombType, Companion, HutDefenderDetails, Path};
+use super::util::{select_side_hut_defender, BombType, Companion, HutDefenderDetails, Path};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -458,6 +458,75 @@ impl State {
         roads: &HashSet<(i32, i32)>,
         shortest_path: &HashMap<SourceDestXY, Path>,
     ) {
+        log::info!("Companion update");
+        let mut companion_clone = self.companion.clone().unwrap();
+
+        if companion_clone.reached_dest {
+            //in destination.
+            let target_building = companion_clone.target_building.clone();
+            let target_defender = companion_clone.target_defender.clone();
+            let current_target = companion_clone.current_target;
+
+            //check for defender or building to update reached.
+            if let Some(current_target) = current_target {
+                match current_target {
+                    CompanionTarget::Building => {
+                        let target_building = target_building.clone().unwrap();
+                        for building in &self.buildings {
+                            if building.id == target_building.id && building.current_hp <= 0 {
+                                companion_clone.reached_dest = false;
+                                companion_clone.target_building = None;
+                                companion_clone.target_defender = None;
+                                companion_clone.target_tile = None;
+                                companion_clone.current_target = None;
+                            }
+                        }
+                    }
+                    CompanionTarget::Defender => {
+                        let target_defender = target_defender.clone().unwrap();
+                        for defender in &self.defenders {
+                            if defender.id == target_defender.id && !defender.is_alive {
+                                companion_clone.reached_dest = false;
+                                companion_clone.target_building = None;
+                                companion_clone.target_defender = None;
+                                companion_clone.current_target = None;
+                            }
+                        }
+                    }
+                }
+                self.companion = Some(companion_clone.clone());
+            }
+        } else {
+            //move to destination.
+            if companion_clone.current_target.is_none() {
+                let priority = get_companion_priority(
+                    &self.buildings,
+                    &self.defenders,
+                    &companion_clone,
+                    roads,
+                    shortest_path,
+                );
+                let target_building = if priority.high_prior_building.0.is_some() {
+                    priority.high_prior_building.0
+                } else {
+                    priority.second_prior_building.0
+                };
+
+                let target_defender = priority.high_prior_defender.0;
+
+                let target_tile = priority.high_prior_tile.0;
+
+                let current_target = priority.current_target;
+
+                companion_clone.target_building = target_building;
+                companion_clone.target_defender = target_defender;
+                companion_clone.target_tile = target_tile;
+                companion_clone.current_target = current_target;
+
+                self.companion = Some(companion_clone.clone());
+            }
+            let target_tile = companion_clone.target_tile.clone().unwrap();
+        }
     }
 
     pub fn place_bombs(

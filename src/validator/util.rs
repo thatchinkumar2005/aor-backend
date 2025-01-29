@@ -6,6 +6,7 @@ use crate::api::attack::socket::DefenderResponse;
 use crate::api::attack::socket::{ResultType, SocketResponse};
 use crate::constants::COMPANION_PRIORITY;
 use crate::validator::state::State;
+use oauth2::url::OpaqueOrigin;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, Hash, PartialEq, Serialize, Clone)]
@@ -51,6 +52,7 @@ pub struct Companion {
     pub target_building: Option<BuildingDetails>,
     pub target_defender: Option<DefenderDetails>,
     pub target_tile: Option<Coords>,
+    pub current_target: Option<CompanionTarget>,
     pub reached_dest: bool,
 }
 
@@ -161,12 +163,19 @@ pub struct ValidatorResponse {
     pub state: Option<State>,
     pub is_sync: bool,
 }
+
+#[derive(Debug, Serialize, Clone, PartialEq, Copy, Deserialize)]
+pub enum CompanionTarget {
+    Building,
+    Defender,
+}
 #[derive(Serialize, Clone)]
 pub struct CompanionPriorityResponse {
     pub high_prior_building: (Option<BuildingDetails>, i32),
     pub second_prior_building: (Option<BuildingDetails>, i32),
     pub high_prior_defender: (Option<DefenderDetails>, i32),
-    pub high_prior_tile: (Option<(i32, i32)>, i32),
+    pub high_prior_tile: (Option<Coords>, i32),
+    pub current_target: Option<CompanionTarget>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -304,7 +313,7 @@ pub fn get_companion_priority(
     let mut high_prior_building: (Option<BuildingDetails>, i32) = (None, -1);
     let mut high_prior_defender: (Option<DefenderDetails>, i32) = (None, -1);
     let mut second_prior_building: (Option<BuildingDetails>, i32) = (None, -1);
-    let mut high_prior_tile: (Option<(i32, i32)>, i32) = (None, -1);
+    let mut high_prior_tile: (Option<Coords>, i32) = (None, -1);
 
     //handle buildings
     for building in buildings {
@@ -406,7 +415,10 @@ pub fn get_companion_priority(
 
             let priority = priority + 1 / next_hop.l;
             if priority > high_prior_tile.1 {
-                high_prior_tile.0 = Some((road_tile.0, road_tile.1));
+                high_prior_tile.0 = Some(Coords {
+                    x: road_tile.0,
+                    y: road_tile.1,
+                });
                 high_prior_tile.1 = priority;
             }
         }
@@ -438,10 +450,27 @@ pub fn get_companion_priority(
             high_prior_defender.1 = priority;
         }
     }
+    let companion_target = if high_prior_building.0.is_some() && high_prior_defender.0.is_some() {
+        if high_prior_building.1 > high_prior_defender.1 {
+            Some(CompanionTarget::Building)
+        } else {
+            Some(CompanionTarget::Defender)
+        }
+    } else if high_prior_building.0.is_some() {
+        Some(CompanionTarget::Building)
+    } else if high_prior_defender.0.is_some() {
+        Some(CompanionTarget::Defender)
+    } else if second_prior_building.0.is_some() {
+        Some(CompanionTarget::Building)
+    } else {
+        None
+    };
+
     CompanionPriorityResponse {
         high_prior_building,
         second_prior_building,
         high_prior_defender,
         high_prior_tile,
+        current_target: companion_target,
     }
 }

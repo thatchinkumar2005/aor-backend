@@ -2,7 +2,7 @@ use crate::constants::*;
 use crate::error::DieselError;
 use crate::schema::{block_type, map_spaces};
 use crate::util::function;
-use crate::validator::util::{Coords, Path, SourceDestXY};
+use crate::validator::util::{Path, SourceDestXY};
 use anyhow::Result;
 use array2d::Array2D;
 use diesel::prelude::*;
