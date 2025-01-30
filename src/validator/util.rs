@@ -29,7 +29,7 @@ pub struct Attacker {
     pub attacker_pos: Coords,
     pub attacker_health: i32,
     pub attacker_speed: i32,
-    pub path_in_current_frame: Vec<Coords>,
+    // pub path_in_current_frame: Vec<Coords>,
     pub bombs: Vec<Bomb>,
     pub trigger_defender: bool,
     pub bomb_count: i32,
@@ -42,7 +42,7 @@ pub struct IsTriggered {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DefenderDetails {
-    pub id: i32,
+    pub mapSpaceId: i32,
     pub name: String,
     pub radius: i32,
     pub speed: i32,
@@ -83,7 +83,8 @@ pub struct BombType {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BuildingDetails {
-    pub id: i32,
+    pub block_id: i32,
+    pub map_space_id: i32,
     pub current_hp: i32,
     pub total_hp: i32,
     pub artifacts_obtained: i32,
@@ -92,7 +93,7 @@ pub struct BuildingDetails {
     pub name: String,
     pub range: i32,
     pub frequency: i32,
-    pub block_id: i32,
+    // pub block_id: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

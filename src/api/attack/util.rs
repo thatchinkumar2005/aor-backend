@@ -64,13 +64,13 @@ pub struct AttackToken {
     pub iat: usize,
     pub exp: usize,
 }
-#[derive(Serialize, Clone, Debug)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+// #[derive(Serialize, Clone, Debug)]
+// pub enum Direction {
+//     Up,
+//     Down,
+//     Left,
+//     Right,
+// }
 
 #[derive(Serialize, Clone, Debug)]
 pub struct EventResponse {
@@ -78,7 +78,7 @@ pub struct EventResponse {
     pub attacker_id: Option<i32>,
     pub bomb_id: Option<i32>,
     pub coords: Coords,
-    pub direction: Direction,
+    // pub direction: Direction,
     pub is_bomb: bool,
 }
 
@@ -617,7 +617,7 @@ pub fn get_defenders(
         let (hut_x, hut_y) = (map_space.x_coordinate, map_space.y_coordinate);
         // let path: Vec<(i32, i32)> = vec![(hut_x, hut_y)];
         defenders.push(DefenderDetails {
-            id: defender.id,
+            mapSpaceId: map_space.id,
             name: defender.name.clone(),
             radius: prop.range,
             speed: defender.speed,
@@ -658,7 +658,8 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
         .into_iter()
         .map(
             |(map_space, (block_type, building, prop))| BuildingDetails {
-                id: map_space.id,
+                block_id: block_type.id,
+                map_space_id: map_space.id,
                 current_hp: building.hp,
                 total_hp: building.hp,
                 artifacts_obtained: 0,
@@ -670,7 +671,6 @@ pub fn get_buildings(conn: &mut PgConnection, map_id: i32) -> Result<Vec<Buildin
                 name: building.name,
                 range: prop.range,
                 frequency: prop.frequency,
-                block_id: block_type.id,
             },
         )
         .collect();
@@ -685,16 +685,18 @@ pub fn get_hut_defender(
         .inner_join(defender_type::table)
         .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)))
         .filter(defender_type::name.eq("Hut_Defender"));
-    let hut_defenders: Vec<DefenderDetails> = joined_table
+    let hut_defenders = joined_table
         .load::<(BlockType, DefenderType, Prop)>(conn)
         .map_err(|err| DieselError {
             table: "defender_type",
             function: function!(),
             error: err,
         })?
-        .into_iter()
-        .map(|(block_type, defender_type, prop)| DefenderDetails {
-            id: defender_type.id,
+        .into_iter();
+    let mut hut_defender_array: Vec<DefenderDetails> = Vec::new();
+    for (i, (block_type, defender_type, prop)) in hut_defenders.enumerate() {
+        hut_defender_array.push(DefenderDetails {
+            mapSpaceId: (i + 1) as i32,
             name: defender_type.name.clone(),
             radius: prop.range,
             speed: defender_type.speed,
@@ -706,8 +708,26 @@ pub fn get_hut_defender(
             path_in_current_frame: Vec::new(),
             block_id: block_type.id,
             level: defender_type.level,
-        })
-        .collect();
+        });
+        log::info!("hut_defenders {:?}", i);
+    }
+
+    // .map(|(block_type, defender_type, prop)| DefenderDetails {
+    //     mapSpaceId: i + 1,
+    //     name: defender_type.name.clone(),
+    //     radius: prop.range,
+    //     speed: defender_type.speed,
+    //     damage: defender_type.damage,
+    //     defender_pos: Coords { x: 0, y: 0 },
+    //     is_alive: true,
+    //     damage_dealt: false,
+    //     target_id: None,
+    //     path_in_current_frame: Vec::new(),
+    //     block_id: block_type.id,
+    //     level: defender_type.level,
+    // })
+    // .collect();
+    log::info!("hut_defenders array {:?}", hut_defender_array);
 
     let joined_table = map_spaces::table
         .inner_join(block_type::table)
@@ -727,11 +747,29 @@ pub fn get_hut_defender(
         .map(|(map_spaces, _, building)| (map_spaces.id, building.level))
         .collect();
 
+    log::info!("hut defeners {:?}", hut_defender_array);
+    // let mut hut_defenders_res: HashMap<i32, Vec<DefenderDetails>> = HashMap::new();
+    // for (i, hut) in huts.iter().enumerate() {
+    //     // log::info!("hut mapspaceid{:?}", hut.0);
+    //     // if let Some(hut_defender) = hut_defender_array.iter().find(|hd| hd.level == hut.1) {
+    //     //     hut_defenders_res.insert(hut.0, hut_defender.clone());
+    //     // }
+    //     for (i, hut_defender) in hut_defender_array.iter().enumerate() {
+    //         if hut_defender.level == hut.1 {
+    //             hut_defenders_res
+    //                 .entry(hut.0)
+    //                 .or_insert_with(Vec::new)
+    //                 .push(hut_defender.clone());
+    //         }
+    //     }
+    // }
     let mut hut_defenders_res: HashMap<i32, DefenderDetails> = HashMap::new();
-    for hut in huts {
-        if let Some(hut_defender) = hut_defenders.iter().find(|hd| hd.level == hut.1) {
-            hut_defenders_res.insert(hut.0, hut_defender.clone());
-        }
+    for (i, hut) in huts.iter().enumerate() {
+        // log::info!("hut mapspaceid{:?}", hut.0);
+        // if let Some(hut_defender) = hut_defender_array.iter().find(|hd| hd.level == hut.1) {
+        //     hut_defenders_res.insert(hut.0, hut_defender.clone());
+        // }
+        hut_defenders_res.insert(hut.0, hut_defender_array[i].clone());
     }
     log::info!("{:?}", hut_defenders_res);
     Ok(hut_defenders_res)
@@ -783,7 +821,8 @@ pub fn update_buidling_artifacts(
 
     // Update the buildings with the artifact count
     for building in buildings.iter_mut() {
-        building.artifacts_obtained = *artifact_count.get(&building.id).unwrap_or(&0) as i32;
+        building.artifacts_obtained =
+            *artifact_count.get(&building.map_space_id).unwrap_or(&0) as i32;
     }
 
     Ok(buildings)
