@@ -132,6 +132,22 @@ pub struct ValidatorResponse {
     pub is_sync: bool,
 }
 
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash, Copy, Deserialize)]
+pub enum ChallengeType {
+    Maze,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash, Copy, Deserialize)]
+pub struct MazeChallenge {
+    pub coins: i32,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash, Copy, Deserialize)]
+pub struct Challenge {
+    pub challenge_type: Option<ChallengeType>,
+    pub maze: MazeChallenge,
+}
+
 pub fn send_terminate_game_message(frame_number: i32, message: String) -> SocketResponse {
     SocketResponse {
         frame_number,

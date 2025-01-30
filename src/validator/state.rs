@@ -15,7 +15,9 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
+use super::util::{
+    select_side_hut_defender, BombType, Challenge, HutDefenderDetails, MazeChallenge,
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -33,6 +35,7 @@ pub struct State {
     pub buildings: Vec<BuildingDetails>,
     pub total_hp_buildings: i32,
     pub in_validation: InValidation,
+    pub challenge: Challenge,
 }
 
 impl State {
@@ -88,6 +91,10 @@ impl State {
             in_validation: InValidation {
                 message: "".to_string(),
                 is_invalidated: false,
+            },
+            challenge: Challenge {
+                challenge_type: None,
+                maze: MazeChallenge { coins: -1 },
             },
         }
     }
