@@ -414,6 +414,7 @@ async fn socket_handler(
             hut_defenders,
             mines,
             buildings,
+            None,
         );
         game_state.set_total_hp_buildings();
 

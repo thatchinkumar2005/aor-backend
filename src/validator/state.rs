@@ -15,8 +15,12 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-use super::util::{
-    select_side_hut_defender, BombType, Challenge, HutDefenderDetails, MazeChallenge,
+use super::{
+    challenges::attacker_movement_challenge_handle,
+    util::{
+        select_side_hut_defender, BombType, Challenge, ChallengeType, HutDefenderDetails,
+        MazeChallenge,
+    },
 };
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -35,7 +39,7 @@ pub struct State {
     pub buildings: Vec<BuildingDetails>,
     pub total_hp_buildings: i32,
     pub in_validation: InValidation,
-    pub challenge: Challenge,
+    pub challenge: Option<Challenge>,
 }
 
 impl State {
@@ -46,6 +50,7 @@ impl State {
         hut_defenders: HashMap<i32, DefenderDetails>,
         mines: Vec<MineDetails>,
         buildings: Vec<BuildingDetails>,
+        challenge: Option<Challenge>,
     ) -> State {
         let mut hut = HashMap::new();
         for building in buildings.clone() {
@@ -69,6 +74,7 @@ impl State {
                 hut.insert(building.map_space_id, hut_defender_details);
             }
         }
+
         State {
             frame_no: 0,
             attacker_user_id,
@@ -92,10 +98,7 @@ impl State {
                 message: "".to_string(),
                 is_invalidated: false,
             },
-            challenge: Challenge {
-                challenge_type: None,
-                maze: MazeChallenge { coins: -1 },
-            },
+            challenge,
         }
     }
 
@@ -165,11 +168,15 @@ impl State {
         }
 
         if self.attacker_death_count == LIVES {
+            log::info!("Attacker lives forged");
             self.in_validation = InValidation {
                 message: "Attacker Lives forged!".to_string(),
                 is_invalidated: true,
             };
         }
+
+        //challenges handler
+        attacker_movement_challenge_handle(self, roads, &attacker_current);
 
         if !roads.contains(&(
             attacker_current.attacker_pos.x,
