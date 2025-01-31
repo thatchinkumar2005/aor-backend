@@ -178,6 +178,12 @@ pub struct CompanionPriorityResponse {
     pub current_target: Option<CompanionTarget>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompanionResult {
+    pub current_target: Option<CompanionTarget>,
+    pub current_target_tile: Option<Coords>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BulletSpawnResponse {
     pub sentry_id: i32,
@@ -204,6 +210,7 @@ pub fn send_terminate_game_message(frame_number: i32, message: String) -> Socket
         is_game_over: true,
         shoot_bullets: None,
         message: Some(message),
+        companion: None,
     }
 }
 

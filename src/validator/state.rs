@@ -33,7 +33,9 @@ use chrono::Local;
 use petgraph::data::Build;
 use serde::{Deserialize, Serialize};
 
-use super::util::{select_side_hut_defender, BombType, Companion, HutDefenderDetails, Path};
+use super::util::{
+    select_side_hut_defender, BombType, Companion, CompanionResult, HutDefenderDetails, Path,
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -457,7 +459,7 @@ impl State {
         &mut self,
         roads: &HashSet<(i32, i32)>,
         shortest_path: &HashMap<SourceDestXY, Path>,
-    ) {
+    ) -> Option<CompanionResult> {
         log::info!("Companion update");
         let mut companion_clone = self.companion.clone().unwrap();
         let companion_log_clone = companion_clone.clone();
@@ -573,6 +575,10 @@ impl State {
 
             self.companion = Some(companion_clone.clone());
         }
+        Some(CompanionResult {
+            current_target: companion_clone.current_target,
+            current_target_tile: companion_clone.target_tile,
+        })
     }
 
     pub fn place_bombs(

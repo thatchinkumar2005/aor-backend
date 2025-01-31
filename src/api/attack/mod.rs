@@ -634,6 +634,7 @@ async fn socket_handler(
                     shoot_bullets: None,
                     is_game_over: true,
                     message: Some("Connection timed out".to_string()),
+                    companion: None,
                 })
                 .unwrap();
                 if session_clone2.text(response_json).await.is_err() {

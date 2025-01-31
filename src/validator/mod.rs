@@ -115,6 +115,7 @@ pub fn game_handler(
                 message: Some(String::from(
                     "Place Attacker, set attacker and bomb response",
                 )),
+                companion: None,
             }));
         }
         ActionType::PlaceCompanion => {
@@ -164,6 +165,7 @@ pub fn game_handler(
                 is_sync: false,
                 is_game_over: false,
                 message: Some(String::from("Placed companion")),
+                companion: None,
             }));
         }
 
@@ -290,6 +292,7 @@ pub fn game_handler(
                     is_game_over: false,
                     shoot_bullets: Some(shoot_bullets),
                     message: Some(String::from("Movement Response")),
+                    companion: companion_res,
                 };
                 return Some(Ok(response));
             }
@@ -349,6 +352,7 @@ pub fn game_handler(
                 is_game_over: false,
                 shoot_bullets: Some(shoot_bullets),
                 message: Some(String::from("Is Mine Response")),
+                companion: None,
             }));
         }
         ActionType::PlaceBombs => {
@@ -438,6 +442,7 @@ pub fn game_handler(
                 is_game_over: false,
                 shoot_bullets: Some(shoot_bullets),
                 message: Some(String::from("Place Bomb Response")),
+                companion: None,
             }));
         }
         ActionType::Idle => {
@@ -465,6 +470,7 @@ pub fn game_handler(
                 is_game_over: false,
                 shoot_bullets: Some(shoot_bullets),
                 message: Some(String::from("Idle Response")),
+                companion: None,
             }));
         }
         ActionType::Terminate => {
@@ -488,6 +494,7 @@ pub fn game_handler(
                 is_game_over: true,
                 shoot_bullets: None,
                 message: Some(String::from("Game over")),
+                companion: None,
             };
             return Some(Ok(socket_response));
         }
@@ -513,6 +520,7 @@ pub fn game_handler(
                 is_game_over: false,
                 shoot_bullets: None,
                 message: Some(String::from("Self Destructed")),
+                companion: None,
             };
 
             return Some(Ok(socket_response));
