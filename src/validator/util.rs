@@ -61,6 +61,12 @@ pub struct IsTriggered {
     pub is_triggered: bool,
 }
 
+#[derive(Debug, Serialize, Clone, PartialEq, Copy, Deserialize)]
+pub enum DefenderTarget {
+    Attacker,
+    Companion,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DefenderDetails {
     pub map_space_id: i32,
@@ -71,7 +77,7 @@ pub struct DefenderDetails {
     pub defender_pos: Coords,
     pub is_alive: bool,
     pub damage_dealt: bool,
-    pub target_id: Option<f32>,
+    pub target_id: Option<DefenderTarget>,
     pub path_in_current_frame: Vec<Coords>,
     pub max_health: i32,
     pub block_id: i32,
@@ -97,7 +103,7 @@ pub struct MineDetails {
     pub damage: i32,
 }
 
-#[derive(Serialize, Clone, Deserialize)]
+#[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct BombType {
     pub id: i32,
     pub radius: i32,
@@ -121,7 +127,7 @@ pub struct BuildingDetails {
     pub level: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct InValidation {
     pub message: String,
     pub is_invalidated: bool,
@@ -149,6 +155,7 @@ pub struct SourceDest {
 
 pub struct DefenderReturnType {
     pub attacker_health: i32,
+    pub companion_health: i32,
     pub defender_response: Vec<DefenderResponse>,
     pub state: State,
 }
@@ -182,6 +189,7 @@ pub struct CompanionPriorityResponse {
 pub struct CompanionResult {
     pub current_target: Option<CompanionTarget>,
     pub current_target_tile: Option<Coords>,
+    pub is_alive: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -313,7 +321,7 @@ pub fn get_roads_around_building(
 pub fn get_companion_priority(
     buildings: &Vec<BuildingDetails>,
     defenders: &Vec<DefenderDetails>,
-    companion: &Companion,
+    companion: &mut Companion,
     roads: &HashSet<(i32, i32)>,
     shortest_path: &HashMap<SourceDestXY, Path>,
 ) -> CompanionPriorityResponse {

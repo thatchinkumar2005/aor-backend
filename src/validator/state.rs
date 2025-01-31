@@ -34,10 +34,11 @@ use petgraph::data::Build;
 use serde::{Deserialize, Serialize};
 
 use super::util::{
-    select_side_hut_defender, BombType, Companion, CompanionResult, HutDefenderDetails, Path,
+    select_side_hut_defender, BombType, Companion, CompanionResult, DefenderTarget,
+    HutDefenderDetails, Path,
 };
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct State {
     pub frame_no: i32,
     pub attacker_user_id: i32,
@@ -327,7 +328,7 @@ impl State {
                 //     "defender triggered when attacker was at ---- x:{}, y:{} and defender id: {}",
                 //     new_pos.x, new_pos.y, defender.id
                 // );
-                defender.target_id = Some(0.0);
+                defender.target_id = Some(DefenderTarget::Attacker);
                 attacker.trigger_defender = true;
             }
             // }
@@ -461,123 +462,140 @@ impl State {
         shortest_path: &HashMap<SourceDestXY, Path>,
     ) -> Option<CompanionResult> {
         log::info!("Companion update");
-        let mut companion_clone = self.companion.clone().unwrap();
-        let companion_log_clone = companion_clone.clone();
-        if let Some(target_tile) = companion_log_clone.target_tile {
-            log::info!("companion target tile: {:?}", target_tile);
-        }
-        // if let Some(target_building) = companion_log_clone.target_building {
-        //     log::info!("companion target building: {:?}", target_building);
-        // }
-        // if let Some(target_defender) = companion_log_clone.target_defender {
-        //     log::info!("companion target defender: {:?}", target_defender);
-        // }
-        // if let Some(current_target) = companion_log_clone.current_target {
-        //     log::info!("companion current target: {:?}", current_target);
-        // }
-        log::info!("companion pos: {:?}", companion_log_clone.companion_pos);
-        log::info!("dest reached: {}", companion_log_clone.reached_dest);
+        let companion = self.companion.as_mut().unwrap();
+        let is_companion_alive = companion.companion_health > 0;
 
-        if companion_clone.reached_dest {
-            //in destination.
-            let target_building = companion_clone.target_building.clone();
-            let target_defender = companion_clone.target_defender.clone();
-            let current_target = companion_clone.current_target;
+        if is_companion_alive {
+            // let companion_log_clone = companion.clone();
+            // if let Some(target_tile) = companion_log_clone.target_tile {
+            //     log::info!("companion target tile: {:?}", target_tile);
+            // }
+            // if let Some(target_building) = companion_log_clone.target_building {
+            //     log::info!("companion target building: {:?}", target_building);
+            // }
+            // if let Some(target_defender) = companion_log_clone.target_defender {
+            //     log::info!("companion target defender: {:?}", target_defender);
+            // }
+            // if let Some(current_target) = companion_log_clone.current_target {
+            //     log::info!("companion current target: {:?}", current_target);
+            // }
+            // log::info!("companion pos: {:?}", companion_log_clone.companion_pos);
+            // log::info!("dest reached: {}", companion_log_clone.reached_dest);
 
-            //check for defender or building to update reached.
-            log::info!("Companion reached dest");
-            if let Some(current_target) = current_target {
-                match current_target {
-                    CompanionTarget::Building => {
-                        let target_building = target_building.unwrap();
-                        for building in &self.buildings {
-                            if building.map_space_id == target_building.map_space_id
-                                && building.current_hp <= 0
-                            {
-                                companion_clone.reached_dest = false;
-                                companion_clone.target_building = None;
-                                companion_clone.target_defender = None;
-                                companion_clone.target_tile = None;
-                                companion_clone.current_target = None;
+            for defender in self.defenders.iter_mut() {
+                if defender.target_id.is_none()
+                    && defender.is_alive
+                    && (((defender.defender_pos.x - companion.companion_pos.x).abs()
+                        + (defender.defender_pos.y - companion.companion_pos.y).abs())
+                        <= defender.radius)
+                {
+                    defender.target_id = Some(DefenderTarget::Companion);
+                    companion.trigger_defender = true;
+                }
+            }
+
+            if companion.reached_dest {
+                //in destination.
+                let target_building = companion.target_building.clone();
+                let target_defender = companion.target_defender.clone();
+                let current_target = companion.current_target;
+
+                //check for defender or building to update reached.
+                log::info!("Companion reached dest");
+                if let Some(current_target) = current_target {
+                    match current_target {
+                        CompanionTarget::Building => {
+                            let target_building = target_building.unwrap();
+                            for building in &self.buildings {
+                                if building.map_space_id == target_building.map_space_id
+                                    && building.current_hp <= 0
+                                {
+                                    companion.reached_dest = false;
+                                    companion.target_building = None;
+                                    companion.target_defender = None;
+                                    companion.target_tile = None;
+                                    companion.current_target = None;
+                                }
+                            }
+                        }
+                        CompanionTarget::Defender => {
+                            let target_defender = target_defender.unwrap();
+                            for defender in &self.defenders {
+                                if defender.mapSpaceId == target_defender.mapSpaceId
+                                    && !defender.is_alive
+                                {
+                                    companion.reached_dest = false;
+                                    companion.target_building = None;
+                                    companion.target_defender = None;
+                                    companion.current_target = None;
+                                }
                             }
                         }
                     }
-                    CompanionTarget::Defender => {
-                        let target_defender = target_defender.unwrap();
-                        for defender in &self.defenders {
-                            if defender.mapSpaceId == target_defender.mapSpaceId
-                                && !defender.is_alive
-                            {
-                                companion_clone.reached_dest = false;
-                                companion_clone.target_building = None;
-                                companion_clone.target_defender = None;
-                                companion_clone.current_target = None;
-                            }
-                        }
-                    }
+                } else {
+                    companion.reached_dest = false;
+                    companion.target_building = None;
+                    companion.target_defender = None;
+                    companion.current_target = None;
                 }
             } else {
-                companion_clone.reached_dest = false;
-                companion_clone.target_building = None;
-                companion_clone.target_defender = None;
-                companion_clone.current_target = None;
-            }
-            self.companion = Some(companion_clone.clone());
-        } else {
-            //get priorities if we don't have a target.
-            if companion_clone.current_target.is_none() {
-                let priority = get_companion_priority(
-                    &self.buildings,
-                    &self.defenders,
-                    &companion_clone,
-                    roads,
-                    shortest_path,
-                );
-                log::info!("priority response{:?}", priority);
-                let target_building = if priority.high_prior_building.0.is_some() {
-                    priority.high_prior_building.0
-                } else {
-                    priority.second_prior_building.0
-                };
+                //get priorities if we don't have a target.
+                if companion.current_target.is_none() {
+                    let priority = get_companion_priority(
+                        &self.buildings,
+                        &self.defenders,
+                        companion,
+                        roads,
+                        shortest_path,
+                    );
+                    log::info!("priority response{:?}", priority);
+                    let target_building = if priority.high_prior_building.0.is_some() {
+                        priority.high_prior_building.0
+                    } else {
+                        priority.second_prior_building.0
+                    };
 
-                let target_defender = priority.high_prior_defender.0;
+                    let target_defender = priority.high_prior_defender.0;
 
-                let target_tile = priority.high_prior_tile.0;
+                    let target_tile = priority.high_prior_tile.0;
 
-                let current_target = priority.current_target;
+                    let current_target = priority.current_target;
 
-                companion_clone.target_building = target_building;
-                companion_clone.target_defender = target_defender;
-                companion_clone.target_tile = target_tile;
-                companion_clone.current_target = current_target;
-            }
+                    companion.target_building = target_building;
+                    companion.target_defender = target_defender;
+                    companion.target_tile = target_tile;
+                    companion.current_target = current_target;
+                }
 
-            //move to destination.
-            let target_tile = companion_clone.target_tile.clone().unwrap();
-            let next_hop = shortest_path.get(&SourceDestXY {
-                source_x: companion_clone.companion_pos.x,
-                source_y: companion_clone.companion_pos.y,
-                dest_x: target_tile.x,
-                dest_y: target_tile.y,
-            });
+                //move to destination.
+                let target_tile = companion.target_tile.clone().unwrap();
+                let next_hop = shortest_path.get(&SourceDestXY {
+                    source_x: companion.companion_pos.x,
+                    source_y: companion.companion_pos.y,
+                    dest_x: target_tile.x,
+                    dest_y: target_tile.y,
+                });
 
-            if let Some(next_hop) = next_hop {
-                companion_clone.companion_pos = Coords {
-                    x: next_hop.x,
-                    y: next_hop.y,
-                };
-                if companion_clone.companion_pos.x == target_tile.x
-                    && companion_clone.companion_pos.y == target_tile.y
-                {
-                    companion_clone.reached_dest = true;
+                if let Some(next_hop) = next_hop {
+                    companion.companion_pos = Coords {
+                        x: next_hop.x,
+                        y: next_hop.y,
+                    };
+                    if companion.companion_pos.x == target_tile.x
+                        && companion.companion_pos.y == target_tile.y
+                    {
+                        companion.reached_dest = true;
+                    }
                 }
             }
-
-            self.companion = Some(companion_clone.clone());
+        } else {
+            log::info!("Companion died");
         }
+
         Some(CompanionResult {
-            current_target: companion_clone.current_target,
-            current_target_tile: companion_clone.target_tile,
+            current_target: companion.current_target,
+            current_target_tile: companion.target_tile,
+            is_alive: companion.companion_health > 0,
         })
     }
 
@@ -1152,32 +1170,36 @@ impl State {
         shortest_path: &HashMap<SourceDestXY, Path>,
     ) -> DefenderReturnType {
         let attacker = self.attacker.as_mut().unwrap();
+        let companion = self.companion.as_mut().unwrap();
         let mut defenders_damaged: Vec<DefenderResponse> = Vec::new();
 
         for defender in self.defenders.iter_mut() {
-            if !defender.is_alive || defender.target_id.is_none() {
+            if !defender.is_alive {
                 continue;
             }
 
-            let default_next_hop = Path {
-                x: defender.defender_pos.x,
-                y: defender.defender_pos.y,
-                l: 0,
-            };
+            if let Some(target_id) = defender.target_id {
+                match target_id {
+                    DefenderTarget::Attacker => {
+                        let default_next_hop = Path {
+                            x: defender.defender_pos.x,
+                            y: defender.defender_pos.y,
+                            l: 0,
+                        };
 
-            let next_hop = shortest_path
-                .get(&SourceDestXY {
-                    source_x: defender.defender_pos.x,
-                    source_y: defender.defender_pos.y,
-                    dest_x: attacker_position.x,
-                    dest_y: attacker_position.y,
-                })
-                .unwrap_or(&default_next_hop);
+                        let next_hop = shortest_path
+                            .get(&SourceDestXY {
+                                source_x: defender.defender_pos.x,
+                                source_y: defender.defender_pos.y,
+                                dest_x: attacker_position.x,
+                                dest_y: attacker_position.y,
+                            })
+                            .unwrap_or(&default_next_hop);
 
-            defender.defender_pos = Coords {
-                x: next_hop.x,
-                y: next_hop.y,
-            };
+                        defender.defender_pos = Coords {
+                            x: next_hop.x,
+                            y: next_hop.y,
+                        };
 
             // if defender.name.starts_with("Hut") {
             if attacker_position.x == defender.defender_pos.x
@@ -1210,8 +1232,11 @@ impl State {
         //     };
         // }
 
+        log::info!("Attacker_health: {}", attacker.attacker_health);
+        log::info!("Companion_health: {}", companion.companion_health);
         DefenderReturnType {
             attacker_health: attacker.attacker_health,
+            companion_health: companion.companion_health,
             defender_response: defenders_damaged,
             state: self.clone(),
         }
