@@ -460,6 +460,21 @@ impl State {
     ) {
         log::info!("Companion update");
         let mut companion_clone = self.companion.clone().unwrap();
+        let companion_log_clone = companion_clone.clone();
+        if let Some(target_tile) = companion_log_clone.target_tile {
+            log::info!("companion target tile: {:?}", target_tile);
+        }
+        // if let Some(target_building) = companion_log_clone.target_building {
+        //     log::info!("companion target building: {:?}", target_building);
+        // }
+        // if let Some(target_defender) = companion_log_clone.target_defender {
+        //     log::info!("companion target defender: {:?}", target_defender);
+        // }
+        // if let Some(current_target) = companion_log_clone.current_target {
+        //     log::info!("companion current target: {:?}", current_target);
+        // }
+        log::info!("companion pos: {:?}", companion_log_clone.companion_pos);
+        log::info!("dest reached: {}", companion_log_clone.reached_dest);
 
         if companion_clone.reached_dest {
             //in destination.
@@ -468,6 +483,7 @@ impl State {
             let current_target = companion_clone.current_target;
 
             //check for defender or building to update reached.
+            log::info!("Companion reached dest");
             if let Some(current_target) = current_target {
                 match current_target {
                     CompanionTarget::Building => {
@@ -515,6 +531,7 @@ impl State {
                     roads,
                     shortest_path,
                 );
+                log::info!("priority response{:?}", priority);
                 let target_building = if priority.high_prior_building.0.is_some() {
                     priority.high_prior_building.0
                 } else {
@@ -531,12 +548,30 @@ impl State {
                 companion_clone.target_defender = target_defender;
                 companion_clone.target_tile = target_tile;
                 companion_clone.current_target = current_target;
-
-                self.companion = Some(companion_clone.clone());
             }
 
             //move to destination.
             let target_tile = companion_clone.target_tile.clone().unwrap();
+            let next_hop = shortest_path.get(&SourceDestXY {
+                source_x: companion_clone.companion_pos.x,
+                source_y: companion_clone.companion_pos.y,
+                dest_x: target_tile.x,
+                dest_y: target_tile.y,
+            });
+
+            if let Some(next_hop) = next_hop {
+                companion_clone.companion_pos = Coords {
+                    x: next_hop.x,
+                    y: next_hop.y,
+                };
+                if companion_clone.companion_pos.x == target_tile.x
+                    && companion_clone.companion_pos.y == target_tile.y
+                {
+                    companion_clone.reached_dest = true;
+                }
+            }
+
+            self.companion = Some(companion_clone.clone());
         }
     }
 

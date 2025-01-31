@@ -169,7 +169,7 @@ pub enum CompanionTarget {
     Building,
     Defender,
 }
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct CompanionPriorityResponse {
     pub high_prior_building: (Option<BuildingDetails>, i32),
     pub second_prior_building: (Option<BuildingDetails>, i32),
@@ -388,7 +388,78 @@ pub fn get_companion_priority(
             }
         }
     }
-    if high_prior_building.0.is_some() {
+    if high_prior_building.0.is_some() {}
+
+    //handle defenders
+    for defender in defenders {
+        if !defender.is_alive {
+            continue;
+        }
+        let defender_pos = defender.defender_pos;
+        let next_hop = shortest_path.get(&SourceDestXY {
+            source_x: companion.companion_pos.x,
+            source_y: companion.companion_pos.y,
+            dest_x: defender_pos.x,
+            dest_y: defender_pos.y,
+        });
+
+        if next_hop.is_none() {
+            continue;
+        }
+        let next_hop = next_hop.unwrap();
+        let distance = next_hop.l;
+
+        let priority = COMPANION_PRIORITY.defenders + 1 / distance;
+
+        if distance <= defender.radius && priority > high_prior_defender.1 {
+            high_prior_defender.0 = Some(defender.clone());
+            high_prior_defender.1 = priority;
+        }
+    }
+    let companion_target = if high_prior_building.0.is_some() && high_prior_defender.0.is_some() {
+        if high_prior_building.1 > high_prior_defender.1 {
+            let building = high_prior_building.0.clone().unwrap();
+            let building_road_tiles = get_roads_around_building(&building, roads);
+
+            for road_tile in building_road_tiles {
+                let next_hop = shortest_path.get(&SourceDestXY {
+                    source_x: companion.companion_pos.x,
+                    source_y: companion.companion_pos.y,
+                    dest_x: road_tile.0,
+                    dest_y: road_tile.1,
+                });
+                let default_next_hop = Path {
+                    x: companion.companion_pos.x,
+                    y: companion.companion_pos.y,
+                    l: 1000000,
+                };
+                let next_hop = next_hop.unwrap_or(&default_next_hop);
+
+                let is_defending_building =
+                    building.name == "Defender_Hut" || building.name == "Sentry";
+
+                let priority = if is_defending_building {
+                    COMPANION_PRIORITY.defender_buildings
+                } else {
+                    COMPANION_PRIORITY.buildings
+                };
+
+                let priority = priority + 1 / next_hop.l;
+                if priority > high_prior_tile.1 {
+                    high_prior_tile.0 = Some(Coords {
+                        x: road_tile.0,
+                        y: road_tile.1,
+                    });
+                    high_prior_tile.1 = priority;
+                }
+            }
+            Some(CompanionTarget::Building)
+        } else {
+            high_prior_tile.0 = Some(companion.companion_pos);
+            high_prior_tile.1 = high_prior_defender.1;
+            Some(CompanionTarget::Defender)
+        }
+    } else if high_prior_building.0.is_some() {
         let building = high_prior_building.0.clone().unwrap();
         let building_road_tiles = get_roads_around_building(&building, roads);
 
@@ -424,45 +495,47 @@ pub fn get_companion_priority(
                 high_prior_tile.1 = priority;
             }
         }
-    }
-
-    //handle defenders
-    for defender in defenders {
-        if !defender.is_alive {
-            continue;
-        }
-        let defender_pos = defender.defender_pos;
-        let next_hop = shortest_path.get(&SourceDestXY {
-            source_x: companion.companion_pos.x,
-            source_y: companion.companion_pos.y,
-            dest_x: defender_pos.x,
-            dest_y: defender_pos.y,
-        });
-
-        if next_hop.is_none() {
-            continue;
-        }
-        let next_hop = next_hop.unwrap();
-        let distance = next_hop.l;
-
-        let priority = COMPANION_PRIORITY.defenders + 1 / distance;
-
-        if distance <= defender.radius && priority > high_prior_defender.1 {
-            high_prior_defender.0 = Some(defender.clone());
-            high_prior_defender.1 = priority;
-        }
-    }
-    let companion_target = if high_prior_building.0.is_some() && high_prior_defender.0.is_some() {
-        if high_prior_building.1 > high_prior_defender.1 {
-            Some(CompanionTarget::Building)
-        } else {
-            Some(CompanionTarget::Defender)
-        }
-    } else if high_prior_building.0.is_some() {
         Some(CompanionTarget::Building)
     } else if high_prior_defender.0.is_some() {
+        high_prior_tile.0 = Some(companion.companion_pos);
+        high_prior_tile.1 = high_prior_defender.1;
         Some(CompanionTarget::Defender)
     } else if second_prior_building.0.is_some() {
+        let building = second_prior_building.0.clone().unwrap();
+        let building_road_tiles = get_roads_around_building(&building, roads);
+
+        for road_tile in building_road_tiles {
+            let next_hop = shortest_path.get(&SourceDestXY {
+                source_x: companion.companion_pos.x,
+                source_y: companion.companion_pos.y,
+                dest_x: road_tile.0,
+                dest_y: road_tile.1,
+            });
+            let default_next_hop = Path {
+                x: companion.companion_pos.x,
+                y: companion.companion_pos.y,
+                l: 1000000,
+            };
+            let next_hop = next_hop.unwrap_or(&default_next_hop);
+
+            let is_defending_building =
+                building.name == "Defender_Hut" || building.name == "Sentry";
+
+            let priority = if is_defending_building {
+                COMPANION_PRIORITY.defender_buildings
+            } else {
+                COMPANION_PRIORITY.buildings
+            };
+
+            let priority = priority + 1 / next_hop.l;
+            if priority > high_prior_tile.1 {
+                high_prior_tile.0 = Some(Coords {
+                    x: road_tile.0,
+                    y: road_tile.1,
+                });
+                high_prior_tile.1 = priority;
+            }
+        }
         Some(CompanionTarget::Building)
     } else {
         None
