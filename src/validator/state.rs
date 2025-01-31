@@ -473,7 +473,9 @@ impl State {
                     CompanionTarget::Building => {
                         let target_building = target_building.unwrap();
                         for building in &self.buildings {
-                            if building.id == target_building.id && building.current_hp <= 0 {
+                            if building.map_space_id == target_building.map_space_id
+                                && building.current_hp <= 0
+                            {
                                 companion_clone.reached_dest = false;
                                 companion_clone.target_building = None;
                                 companion_clone.target_defender = None;
@@ -485,7 +487,9 @@ impl State {
                     CompanionTarget::Defender => {
                         let target_defender = target_defender.unwrap();
                         for defender in &self.defenders {
-                            if defender.id == target_defender.id && !defender.is_alive {
+                            if defender.mapSpaceId == target_defender.mapSpaceId
+                                && !defender.is_alive
+                            {
                                 companion_clone.reached_dest = false;
                                 companion_clone.target_building = None;
                                 companion_clone.target_defender = None;
@@ -1104,7 +1108,7 @@ impl State {
     pub fn defender_movement_one_tick(
         &mut self,
         attacker_position: Coords,
-        shortest_path: &HashMap<SourceDestXY, Coords>,
+        shortest_path: &HashMap<SourceDestXY, Path>,
     ) -> DefenderReturnType {
         let attacker = self.attacker.as_mut().unwrap();
         let mut defenders_damaged: Vec<DefenderResponse> = Vec::new();
@@ -1114,6 +1118,12 @@ impl State {
                 continue;
             }
 
+            let default_next_hop = Path {
+                x: defender.defender_pos.x,
+                y: defender.defender_pos.y,
+                l: 0,
+            };
+
             let next_hop = shortest_path
                 .get(&SourceDestXY {
                     source_x: defender.defender_pos.x,
@@ -1121,9 +1131,12 @@ impl State {
                     dest_x: attacker_position.x,
                     dest_y: attacker_position.y,
                 })
-                .unwrap_or(&defender.defender_pos);
+                .unwrap_or(&default_next_hop);
 
-            defender.defender_pos = *next_hop;
+            defender.defender_pos = Coords {
+                x: next_hop.x,
+                y: next_hop.y,
+            };
 
             // if defender.name.starts_with("Hut") {
             if attacker_position.x == defender.defender_pos.x

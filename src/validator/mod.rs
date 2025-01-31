@@ -125,7 +125,7 @@ pub fn game_handler(
                 _game_state.place_companion(Companion {
                     id: attacker.id,
                     path_in_current_frame: Vec::new(),
-                    companion_pos: socket_request.start_position.unwrap(),
+                    companion_pos: socket_request.current_position.unwrap(),
                     companion_health: attacker.max_health,
                     companion_speed: attacker.speed,
                     bombs: Vec::new(),
