@@ -17,10 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     challenges::attacker_movement_challenge_handle,
-    util::{
-        select_side_hut_defender, BombType, Challenge, ChallengeType, HutDefenderDetails,
-        MazeChallenge,
-    },
+    util::{select_side_hut_defender, BombType, Challenge, HutDefenderDetails},
 };
 
 #[derive(Serialize, Deserialize, Clone)]
