@@ -463,15 +463,15 @@ impl State {
     ) -> Option<CompanionResult> {
         log::info!("Companion update");
         let companion = self.companion.as_mut().unwrap();
+        let mut building_damaged: Option<BuildingResponse> = None;
         let is_companion_alive = companion.companion_health > 0;
 
         if is_companion_alive {
-            // let companion_log_clone = companion.clone();
             // if let Some(target_tile) = companion_log_clone.target_tile {
             //     log::info!("companion target tile: {:?}", target_tile);
             // }
             // if let Some(target_building) = companion_log_clone.target_building {
-            //     log::info!("companion target building: {:?}", target_building);
+            //     log::info!("companion target building: {:?}", target_building.name);
             // }
             // if let Some(target_defender) = companion_log_clone.target_defender {
             //     log::info!("companion target defender: {:?}", target_defender);
@@ -482,17 +482,17 @@ impl State {
             // log::info!("companion pos: {:?}", companion_log_clone.companion_pos);
             // log::info!("dest reached: {}", companion_log_clone.reached_dest);
 
-            for defender in self.defenders.iter_mut() {
-                if defender.target_id.is_none()
-                    && defender.is_alive
-                    && (((defender.defender_pos.x - companion.companion_pos.x).abs()
-                        + (defender.defender_pos.y - companion.companion_pos.y).abs())
-                        <= defender.radius)
-                {
-                    defender.target_id = Some(DefenderTarget::Companion);
-                    companion.trigger_defender = true;
-                }
-            }
+            // for defender in self.defenders.iter_mut() {
+            //     if defender.target_id.is_none()
+            //         && defender.is_alive
+            //         && (((defender.defender_pos.x - companion.companion_pos.x).abs()
+            //             + (defender.defender_pos.y - companion.companion_pos.y).abs())
+            //             <= defender.radius)
+            //     {
+            //         defender.target_id = Some(DefenderTarget::Companion);
+            //         companion.trigger_defender = true;
+            //     }
+            // }
 
             if companion.reached_dest {
                 //in destination.
@@ -506,15 +506,43 @@ impl State {
                     match current_target {
                         CompanionTarget::Building => {
                             let target_building = target_building.unwrap();
-                            for building in &self.buildings {
-                                if building.map_space_id == target_building.map_space_id
-                                    && building.current_hp <= 0
-                                {
-                                    companion.reached_dest = false;
-                                    companion.target_building = None;
-                                    companion.target_defender = None;
-                                    companion.target_tile = None;
-                                    companion.current_target = None;
+                            let mut artifacts_taken_by_destroying_building: i32 = 0;
+                            for building in self.buildings.iter_mut() {
+                                if building.map_space_id == target_building.map_space_id {
+                                    log::info!("Target Building {:?}", building);
+                                    log::info!(
+                                        "current tick: {}, last_tick: {}",
+                                        self.frame_no,
+                                        companion.last_attack_tick
+                                    );
+                                    if self.frame_no
+                                        >= companion.last_attack_tick + companion.attack_interval
+                                    {
+                                        artifacts_taken_by_destroying_building =
+                                            (building.artifacts_obtained as f32
+                                                * PERCENTANGE_ARTIFACTS_OBTAINABLE)
+                                                .floor()
+                                                as i32;
+                                        self.artifacts += artifacts_taken_by_destroying_building;
+                                        building.current_hp =
+                                            max(building.current_hp - companion.damage, 0);
+                                        companion.last_attack_tick = self.frame_no;
+                                        log::info!("companion attacked {}", building.name);
+                                        building_damaged = Some(BuildingResponse {
+                                            id: building.map_space_id,
+                                            position: building.tile.clone(),
+                                            hp: building.current_hp,
+                                            artifacts_if_damaged:
+                                                artifacts_taken_by_destroying_building,
+                                        });
+                                    }
+                                    if building.current_hp <= 0 {
+                                        companion.reached_dest = false;
+                                        companion.target_building = None;
+                                        companion.target_defender = None;
+                                        companion.target_tile = None;
+                                        companion.current_target = None;
+                                    }
                                 }
                             }
                         }
@@ -596,6 +624,7 @@ impl State {
             current_target: companion.current_target,
             current_target_tile: companion.target_tile,
             is_alive: companion.companion_health > 0,
+            building_damaged,
         })
     }
 

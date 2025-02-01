@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::time::SystemTime;
 
-use crate::api::attack::socket::DefenderResponse;
+use crate::api::attack::socket::{BuildingResponse, DefenderResponse};
 use crate::api::attack::socket::{ResultType, SocketResponse};
 use crate::constants::COMPANION_PRIORITY;
 use crate::validator::state::State;
@@ -54,6 +54,9 @@ pub struct Companion {
     pub target_tile: Option<Coords>,
     pub current_target: Option<CompanionTarget>,
     pub reached_dest: bool,
+    pub last_attack_tick: i32,
+    pub attack_interval: i32,
+    pub damage: i32,
 }
 
 #[derive(Serialize, Clone, Deserialize)]
@@ -190,6 +193,7 @@ pub struct CompanionResult {
     pub current_target: Option<CompanionTarget>,
     pub current_target_tile: Option<Coords>,
     pub is_alive: bool,
+    pub building_damaged: Option<BuildingResponse>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

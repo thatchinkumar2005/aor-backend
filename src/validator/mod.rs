@@ -138,6 +138,9 @@ pub fn game_handler(
                     target_tile: None,
                     current_target: None,
                     reached_dest: false,
+                    last_attack_tick: 0,
+                    attack_interval: 60,
+                    damage: 30,
                 });
 
                 for bomb_type in _bomb_types {
