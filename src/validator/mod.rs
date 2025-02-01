@@ -2,9 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     api::attack::{
-            socket::{ActionType, BuildingResponse, ResultType, SocketRequest, SocketResponse},
-            util::{EventResponse, GameLog},
+        socket::{
+            ActionType, BaseItemsDamageResponse, BuildingDamageResponse, ResultType, SocketRequest,
+            SocketResponse,
         },
+        util::{EventResponse, GameLog},
+    },
     models::AttackerType,
     validator::util::{Coords, SourceDestXY},
 };
@@ -30,7 +33,7 @@ pub fn game_handler(
 ) -> Option<Result<SocketResponse>> {
     let defender_damaged_result: DefenderReturnType;
     let exploded_mines_result: Vec<MineDetails>;
-    let buildings_damaged_result: Vec<BuildingResponse>;
+    let base_items_damaged_result: BaseItemsDamageResponse;
     match socket_request.action_type {
         ActionType::PlaceAttacker => {
             _game_state.update_frame_number(socket_request.frame_number);
@@ -81,7 +84,10 @@ pub fn game_handler(
                 )));
             }
 
-            let attacker_health = _game_state.attacker.as_ref().map(|attacker| attacker.attacker_health);
+            let attacker_health = _game_state
+                .attacker
+                .as_ref()
+                .map(|attacker| attacker.attacker_health);
 
             return Some(Ok(SocketResponse {
                 frame_number: socket_request.frame_number,
@@ -91,7 +97,7 @@ pub fn game_handler(
                 exploded_mines: None,
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: None,
+                damaged_base_items: None,
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
@@ -217,7 +223,7 @@ pub fn game_handler(
                     exploded_mines: None,
                     // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
                     defender_damaged: Some(defender_damaged_result.clone().defender_response),
-                    damaged_buildings: None,
+                    damaged_base_items: None,
                     hut_triggered,
                     hut_defenders: Some(spawn_result),
                     total_damage_percentage: Some(_game_state.damage_percentage),
@@ -263,7 +269,10 @@ pub fn game_handler(
                 )));
             }
 
-            let attacker_health = _game_state.attacker.as_ref().map(|attacker| attacker.attacker_health);
+            let attacker_health = _game_state
+                .attacker
+                .as_ref()
+                .map(|attacker| attacker.attacker_health);
 
             return Some(Ok(SocketResponse {
                 frame_number: socket_request.frame_number,
@@ -273,7 +282,7 @@ pub fn game_handler(
                 exploded_mines: Some(exploded_mines_result),
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: None,
+                damaged_base_items: None,
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
@@ -324,14 +333,16 @@ pub fn game_handler(
             //     _game_log.e.push(event_response.clone());
             // }
 
-            buildings_damaged_result = _game_state.place_bombs(current_pos, bomb_coords);
+            base_items_damaged_result = _game_state.place_bombs(current_pos, bomb_coords);
 
             _game_log.r.b += 1;
             _game_log.r.d = _game_state.damage_percentage as i32;
             _game_log.r.a = _game_state.artifacts;
 
             let mut bool_temp = false;
-            if !buildings_damaged_result.is_empty() {
+            if !base_items_damaged_result.buildings_damaged.is_empty()
+                || !base_items_damaged_result.defenders_damaged.is_empty()
+            {
                 bool_temp = true;
             }
             let result_type = if bool_temp {
@@ -340,7 +351,6 @@ pub fn game_handler(
                 ResultType::Nothing
             };
 
-
             if _game_state.in_validation.is_invalidated {
                 return Some(Ok(send_terminate_game_message(
                     socket_request.frame_number,
@@ -348,7 +358,10 @@ pub fn game_handler(
                 )));
             }
 
-            let attacker_health = _game_state.attacker.as_ref().map(|attacker| attacker.attacker_health);
+            let attacker_health = _game_state
+                .attacker
+                .as_ref()
+                .map(|attacker| attacker.attacker_health);
 
             return Some(Ok(SocketResponse {
                 frame_number: socket_request.frame_number,
@@ -358,13 +371,13 @@ pub fn game_handler(
                 exploded_mines: None,
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: Some(buildings_damaged_result),
+                damaged_base_items: Some(base_items_damaged_result),
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
-                shoot_bullets:  Some(shoot_bullets),
+                shoot_bullets: Some(shoot_bullets),
                 message: Some(String::from("Place Bomb Response")),
             }));
         }
@@ -373,7 +386,10 @@ pub fn game_handler(
             if _game_state.attacker.is_some() {
                 _game_state.cause_bullet_damage();
             }
-            let attacker_health = _game_state.attacker.as_ref().map(|attacker| attacker.attacker_health);
+            let attacker_health = _game_state
+                .attacker
+                .as_ref()
+                .map(|attacker| attacker.attacker_health);
             return Some(Ok(SocketResponse {
                 frame_number: socket_request.frame_number,
                 result_type: ResultType::Nothing,
@@ -382,7 +398,7 @@ pub fn game_handler(
                 exploded_mines: None,
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: None,
+                damaged_base_items: None,
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
@@ -393,7 +409,10 @@ pub fn game_handler(
             }));
         }
         ActionType::Terminate => {
-            let attacker_health = _game_state.attacker.as_ref().map(|attacker| attacker.attacker_health);
+            let attacker_health = _game_state
+                .attacker
+                .as_ref()
+                .map(|attacker| attacker.attacker_health);
             let socket_response = SocketResponse {
                 frame_number: socket_request.frame_number,
                 result_type: ResultType::GameOver,
@@ -402,7 +421,7 @@ pub fn game_handler(
                 exploded_mines: None,
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: None,
+                damaged_base_items: None,
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
@@ -415,7 +434,10 @@ pub fn game_handler(
         }
         ActionType::SelfDestruct => {
             _game_state.self_destruct();
-            let attacker_health = _game_state.attacker.as_ref().map(|attacker| attacker.attacker_health);
+            let attacker_health = _game_state
+                .attacker
+                .as_ref()
+                .map(|attacker| attacker.attacker_health);
             let socket_response = SocketResponse {
                 frame_number: socket_request.frame_number,
                 result_type: ResultType::Nothing,
@@ -424,7 +446,7 @@ pub fn game_handler(
                 exploded_mines: None,
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: None,
+                damaged_base_items: None,
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),

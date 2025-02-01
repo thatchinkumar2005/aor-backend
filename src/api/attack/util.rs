@@ -33,7 +33,7 @@ use redis::Commands;
 use std::collections::{HashMap, HashSet};
 use std::env;
 
-use super::socket::BuildingResponse;
+use super::socket::BuildingDamageResponse;
 
 #[derive(Debug, Serialize)]
 pub struct DefensePosition {
@@ -610,7 +610,10 @@ pub fn get_defenders(
         .inner_join(map_layout::table)
         .filter(map_layout::player.eq(user_id))
         .inner_join(block_type::table.on(map_spaces::block_type_id.eq(block_type::id)))
-        .inner_join(defender_type::table.on(defender_type::id.eq(block_type::defender_type.assume_not_null())))
+        .inner_join(
+            defender_type::table
+                .on(defender_type::id.eq(block_type::defender_type.assume_not_null())),
+        )
         .inner_join(prop::table.on(defender_type::prop_id.eq(prop::id)))
         .filter(map_spaces::map_id.eq(map_id))
         .filter(block_type::category.eq(BlockCategory::Defender))
@@ -645,7 +648,8 @@ pub fn get_defenders(
             path_in_current_frame: Vec::new(),
             block_id: block_type.id,
             level: defender.level,
-            max_health: defender.max_health,
+            current_health: defender.max_health,
+            total_health: defender.max_health,
         })
     }
     // Sorted to handle multiple defenders attack same attacker at same frame
@@ -726,7 +730,8 @@ pub fn get_hut_defender(
             path_in_current_frame: Vec::new(),
             block_id: block_type.id,
             level: defender_type.level,
-            max_health: defender_type.max_health,
+            current_health: defender_type.max_health,
+            total_health: defender_type.max_health,
         });
         log::info!("hut_defenders {:?}", i);
     }
@@ -850,7 +855,7 @@ pub fn update_buidling_artifacts(
 pub fn terminate_game(
     game_log: &mut GameLog,
     conn: &mut PgConnection,
-    damaged_buildings: &[BuildingResponse],
+    damaged_buildings: &[BuildingDamageResponse],
     redis_conn: &mut RedisConn,
 ) -> Result<()> {
     use crate::schema::{artifact, game};
@@ -1094,7 +1099,7 @@ pub fn can_attack_happen(conn: &mut PgConnection, user_id: i32, is_attacker: boo
 }
 
 pub fn deduct_artifacts_from_building(
-    damaged_buildings: Vec<BuildingResponse>,
+    damaged_buildings: Vec<BuildingDamageResponse>,
     conn: &mut PgConnection,
 ) -> Result<()> {
     use crate::schema::artifact;
