@@ -236,6 +236,7 @@ diesel::table! {
         trophies -> Int4,
         avatar_id -> Int4,
         artifacts -> Int4,
+        is_mod -> Bool,
     }
 }
 
