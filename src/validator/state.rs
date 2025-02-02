@@ -461,26 +461,12 @@ impl State {
         roads: &HashSet<(i32, i32)>,
         shortest_path: &HashMap<SourceDestXY, Path>,
     ) -> Option<CompanionResult> {
-        log::info!("Companion update");
         let companion = self.companion.as_mut().unwrap();
         let mut building_damaged: Option<BuildingResponse> = None;
         let is_companion_alive = companion.companion_health > 0;
 
         if is_companion_alive {
-            // if let Some(target_tile) = companion_log_clone.target_tile {
-            //     log::info!("companion target tile: {:?}", target_tile);
-            // }
-            // if let Some(target_building) = companion_log_clone.target_building {
-            //     log::info!("companion target building: {:?}", target_building.name);
-            // }
-            // if let Some(target_defender) = companion_log_clone.target_defender {
-            //     log::info!("companion target defender: {:?}", target_defender);
-            // }
-            // if let Some(current_target) = companion_log_clone.current_target {
-            //     log::info!("companion current target: {:?}", current_target);
-            // }
-            // log::info!("companion pos: {:?}", companion_log_clone.companion_pos);
-            // log::info!("dest reached: {}", companion_log_clone.reached_dest);
+            //defender logic
 
             // for defender in self.defenders.iter_mut() {
             //     if defender.target_id.is_none()
@@ -501,20 +487,13 @@ impl State {
                 let current_target = companion.current_target;
 
                 //check for defender or building to update reached.
-                log::info!("Companion reached dest");
                 if let Some(current_target) = current_target {
                     match current_target {
                         CompanionTarget::Building => {
                             let target_building = target_building.unwrap();
-                            let mut artifacts_taken_by_destroying_building: i32 = 0;
+                            let mut artifacts_taken_by_destroying_building: i32;
                             for building in self.buildings.iter_mut() {
                                 if building.map_space_id == target_building.map_space_id {
-                                    log::info!("Target Building {:?}", building);
-                                    log::info!(
-                                        "current tick: {}, last_tick: {}",
-                                        self.frame_no,
-                                        companion.last_attack_tick
-                                    );
                                     if self.frame_no
                                         >= companion.last_attack_tick + companion.attack_interval
                                     {
@@ -527,7 +506,6 @@ impl State {
                                         building.current_hp =
                                             max(building.current_hp - companion.damage, 0);
                                         companion.last_attack_tick = self.frame_no;
-                                        log::info!("companion attacked {}", building.name);
                                         building_damaged = Some(BuildingResponse {
                                             id: building.map_space_id,
                                             position: building.tile.clone(),
@@ -576,7 +554,6 @@ impl State {
                         roads,
                         shortest_path,
                     );
-                    log::info!("priority response{:?}", priority);
                     let target_building = if priority.high_prior_building.0.is_some() {
                         priority.high_prior_building.0
                     } else {
@@ -616,8 +593,6 @@ impl State {
                     }
                 }
             }
-        } else {
-            log::info!("Companion died");
         }
         let target_mapspace_id = if let Some(current_target) = &companion.current_target {
             match current_target {
@@ -1282,8 +1257,6 @@ impl State {
         //     };
         // }
 
-        log::info!("Attacker_health: {}", attacker.attacker_health);
-        log::info!("Companion_health: {}", companion.companion_health);
         DefenderReturnType {
             attacker_health: attacker.attacker_health,
             companion_health: companion.companion_health,

@@ -139,7 +139,7 @@ pub fn game_handler(
                     current_target: None,
                     reached_dest: false,
                     last_attack_tick: 0,
-                    attack_interval: 60,
+                    attack_interval: 10,
                     damage: 30,
                 });
 
