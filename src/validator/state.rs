@@ -619,9 +619,30 @@ impl State {
         } else {
             log::info!("Companion died");
         }
+        let target_mapspace_id = if let Some(current_target) = &companion.current_target {
+            match current_target {
+                CompanionTarget::Building => {
+                    if let Some(target_building) = &companion.target_building {
+                        target_building.map_space_id
+                    } else {
+                        -1
+                    }
+                }
+                CompanionTarget::Defender => {
+                    if let Some(target_defender) = &companion.target_defender {
+                        target_defender.mapSpaceId
+                    } else {
+                        -1
+                    }
+                }
+            }
+        } else {
+            -1
+        };
 
         Some(CompanionResult {
             current_target: companion.current_target,
+            map_space_id: target_mapspace_id,
             current_target_tile: companion.target_tile,
             is_alive: companion.companion_health > 0,
             building_damaged,

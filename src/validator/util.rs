@@ -191,6 +191,7 @@ pub struct CompanionPriorityResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanionResult {
     pub current_target: Option<CompanionTarget>,
+    pub map_space_id: i32,
     pub current_target_tile: Option<Coords>,
     pub is_alive: bool,
     pub building_damaged: Option<BuildingResponse>,
