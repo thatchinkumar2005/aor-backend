@@ -17,7 +17,7 @@ use diesel::dsl::exists;
 use diesel::{prelude::*, select};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Clone)]
 pub struct MapSpacesResponseWithArifacts {
@@ -58,6 +58,7 @@ pub struct MineTypeResponse {
 #[derive(Serialize, Clone)]
 pub struct DefenderTypeResponse {
     pub id: i32,
+    pub defender_id: i32,
     pub radius: i32,
     pub speed: i32,
     pub damage: i32,
@@ -843,11 +844,15 @@ pub fn fetch_defender_types(
         .filter(map_layout::player.eq(user_id))
         .inner_join(block_type::table.on(map_spaces::block_type_id.eq(block_type::id)))
         .filter(block_type::category.eq(BlockCategory::Defender))
-        .inner_join(defender_type::table.on(block_type::defender_type.assume_not_null().eq(defender_type::id)))
+        .inner_join(
+            defender_type::table.on(block_type::defender_type
+                .assume_not_null()
+                .eq(defender_type::id)),
+        )
         .inner_join(prop::table.on(prop::id.eq(defender_type::prop_id)))
         .load::<(MapSpaces, MapLayout, BlockType, DefenderType, Prop)>(conn)
         .map_err(|err| DieselError {
-            table: "defender_type",
+            table: "map_spaces",
             function: function!(),
             error: err,
         })?

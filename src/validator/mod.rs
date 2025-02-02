@@ -2,10 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     api::attack::{
-        socket::{
-            ActionType, BaseItemsDamageResponse, BuildingDamageResponse, ResultType, SocketRequest,
-            SocketResponse,
-        },
+        socket::{ActionType, BaseItemsDamageResponse, ResultType, SocketRequest, SocketResponse},
         util::{EventResponse, GameLog},
     },
     models::AttackerType,
@@ -82,6 +79,15 @@ pub fn game_handler(
                     socket_request.frame_number,
                     _game_state.in_validation.message.clone(),
                 )));
+            }
+
+            for defender in _game_state.defenders.iter() {
+                log::info!(
+                    "defender id : {} , position x {}, y {} ",
+                    defender.defender_id,
+                    defender.defender_pos.x,
+                    defender.defender_pos.y
+                );
             }
 
             let attacker_health = _game_state
