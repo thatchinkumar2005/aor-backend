@@ -855,23 +855,25 @@ pub fn fetch_defender_types(
             table: "map_spaces",
             function: function!(),
             error: err,
-        })?
-        .into_iter()
-        .map(|(_, _, block_type, defender_type, prop)| {
-            Ok(DefenderTypeResponse {
-                id: defender_type.id,
-                radius: prop.range,
-                speed: defender_type.speed,
-                damage: defender_type.damage,
-                block_id: block_type.id,
-                level: defender_type.level,
-                cost: defender_type.cost,
-                name: defender_type.name,
-                max_health: defender_type.max_health,
-            })
+        })?;
+
+    let mut defenders: Vec<DefenderTypeResponse> = Vec::new();
+
+    for (map_space, (block_type, _, _, defender, prop)) in result.iter() {
+        defenders.push(DefenderTypeResponse {
+            id: defender.id,
+            defender_id: map_space.id,
+            name: defender.name.clone(),
+            radius: prop.range,
+            speed: defender.speed,
+            damage: defender.damage,
+            block_id: block_type.id,
+            level: defender.level,
+            cost: defender.cost,
+            max_health: defender.max_health,
         })
-        .collect();
-    defenders
+    }
+    Ok(defenders)
 }
 
 pub fn fetch_building_blocks(

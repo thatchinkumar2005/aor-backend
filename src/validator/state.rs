@@ -4,6 +4,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
 use crate::constants::{
     BOMB_DAMAGE_MULTIPLIER, BULLET_COLLISION_TIME, DAMAGE_PER_BULLET_LEVEL_1,
     DAMAGE_PER_BULLET_LEVEL_2, DAMAGE_PER_BULLET_LEVEL_3, LEVEL, LIVES,
@@ -20,9 +21,8 @@ use crate::{
         MineDetails, SourceDestXY,
     },
 };
+use chrono::Local;
 use serde::{Deserialize, Serialize};
-
-use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct State {
@@ -675,7 +675,7 @@ impl State {
                             (current_damage as f32 / self.total_hp_buildings as f32) * 100.0_f32;
                     }
 
-                    buildings_damaged.push(BuildingResponse {
+                    buildings_damaged.push(BuildingDamageResponse {
                         id: building.map_space_id,
                         position: building.tile,
                         hp: building.current_hp,
@@ -717,7 +717,7 @@ impl State {
                     defenders_damaged.push(DefenderDamageResponse {
                         position: defender_position,
                         health: defender.current_health,
-                        defender_id: defender.defender_id,
+                        map_space_id: defender.map_space_id,
                     });
                 }
             } else {
@@ -992,9 +992,6 @@ impl State {
     ) -> DefenderReturnType {
         let attacker = self.attacker.as_mut().unwrap();
         let mut defenders_damaged: Vec<DefenderResponse> = Vec::new();
-        // for defender in self.defenders.iter() {
-        //     log::info!("defender : id {}, position x: {}, y: {}", defender.defender_id, defender_position.x, defender_position.y);
-        // }
 
         for defender in self.defenders.iter_mut() {
             if !defender.is_alive || defender.target_id.is_none() {

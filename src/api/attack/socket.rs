@@ -83,7 +83,7 @@ pub struct BuildingDamageResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DefenderDamageResponse {
-    pub defender_id: i32,
+    pub map_space_id: i32,
     pub position: Coords,
     pub health: i32,
 }
