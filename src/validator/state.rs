@@ -28,7 +28,6 @@ use crate::{
     validator::util::get_roads_around_building,
 };
 
-use super::util::{select_side_hut_defender, BombType, HutDefenderDetails};
 use chrono::Local;
 use petgraph::data::Build;
 use serde::{Deserialize, Serialize};
@@ -462,7 +461,7 @@ impl State {
         shortest_path: &HashMap<SourceDestXY, Path>,
     ) -> Option<CompanionResult> {
         let companion = self.companion.as_mut().unwrap();
-        let mut building_damaged: Option<BuildingResponse> = None;
+        let mut building_damaged: Option<BuildingDamageResponse> = None;
         let is_companion_alive = companion.companion_health > 0;
 
         if is_companion_alive {
@@ -506,7 +505,7 @@ impl State {
                                         building.current_hp =
                                             max(building.current_hp - companion.damage, 0);
                                         companion.last_attack_tick = self.frame_no;
-                                        building_damaged = Some(BuildingResponse {
+                                        building_damaged = Some(BuildingDamageResponse {
                                             id: building.map_space_id,
                                             position: building.tile.clone(),
                                             hp: building.current_hp,
@@ -527,7 +526,7 @@ impl State {
                         CompanionTarget::Defender => {
                             let target_defender = target_defender.unwrap();
                             for defender in &self.defenders {
-                                if defender.mapSpaceId == target_defender.mapSpaceId
+                                if defender.map_space_id == target_defender.map_space_id
                                     && !defender.is_alive
                                 {
                                     companion.reached_dest = false;
@@ -605,7 +604,7 @@ impl State {
                 }
                 CompanionTarget::Defender => {
                     if let Some(target_defender) = &companion.target_defender {
-                        target_defender.mapSpaceId
+                        target_defender.map_space_id
                     } else {
                         -1
                     }

@@ -161,7 +161,7 @@ pub fn game_handler(
                 exploded_mines: None,
                 // triggered_defenders: None,
                 defender_damaged: None,
-                damaged_buildings: None,
+                damaged_base_items: None,
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),

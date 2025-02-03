@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::time::SystemTime;
 
-use crate::api::attack::socket::{BuildingResponse, DefenderResponse};
+use crate::api::attack::socket::{BuildingDamageResponse, DefenderResponse};
 use crate::api::attack::socket::{ResultType, SocketResponse};
 use crate::constants::COMPANION_PRIORITY;
 use crate::validator::state::State;
@@ -194,7 +194,7 @@ pub struct CompanionResult {
     pub map_space_id: i32,
     pub current_target_tile: Option<Coords>,
     pub is_alive: bool,
-    pub building_damaged: Option<BuildingResponse>,
+    pub building_damaged: Option<BuildingDamageResponse>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -254,28 +254,28 @@ pub fn select_side_hut_defender(
         hut_defender_clone.defender_pos.y = tile2.1;
         hut_defender_clone.map_space_id = *previous_hut_defender_id + 1;
         *previous_hut_defender_id += 1;
-        hut_defender_clone.target_id = Some(0.0);
+        hut_defender_clone.target_id = None;
         Some(hut_defender_clone)
     } else if roads.contains(&tile4) {
         hut_defender_clone.defender_pos.x = tile4.0;
         hut_defender_clone.defender_pos.y = tile4.1;
         hut_defender_clone.map_space_id = *previous_hut_defender_id + 1;
         *previous_hut_defender_id += 1;
-        hut_defender_clone.target_id = Some(0.0);
+        hut_defender_clone.target_id = None;
         Some(hut_defender_clone)
     } else if roads.contains(&tile3) {
         hut_defender_clone.defender_pos.x = tile3.0;
         hut_defender_clone.defender_pos.y = tile3.1;
         hut_defender_clone.map_space_id = *previous_hut_defender_id + 1;
         *previous_hut_defender_id += 1;
-        hut_defender_clone.target_id = Some(0.0);
+        hut_defender_clone.target_id = None;
         Some(hut_defender_clone)
     } else if roads.contains(&tile1) {
         hut_defender_clone.defender_pos.x = tile1.0;
         hut_defender_clone.defender_pos.y = tile1.1;
         hut_defender_clone.map_space_id = *previous_hut_defender_id + 1;
         *previous_hut_defender_id += 1;
-        hut_defender_clone.target_id = Some(0.0);
+        hut_defender_clone.target_id = None;
         Some(hut_defender_clone)
     } else {
         None
