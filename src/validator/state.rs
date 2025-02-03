@@ -468,17 +468,17 @@ impl State {
         if is_companion_alive {
             //defender logic
 
-            // for defender in self.defenders.iter_mut() {
-            //     if defender.target_id.is_none()
-            //         && defender.is_alive
-            //         && (((defender.defender_pos.x - companion.companion_pos.x).abs()
-            //             + (defender.defender_pos.y - companion.companion_pos.y).abs())
-            //             <= defender.radius)
-            //     {
-            //         defender.target_id = Some(DefenderTarget::Companion);
-            //         companion.trigger_defender = true;
-            //     }
-            // }
+            for defender in self.defenders.iter_mut() {
+                if defender.target_id.is_none()
+                    && defender.is_alive
+                    && (((defender.defender_pos.x - companion.companion_pos.x).abs()
+                        + (defender.defender_pos.y - companion.companion_pos.y).abs())
+                        <= defender.radius)
+                {
+                    defender.target_id = Some(DefenderTarget::Companion);
+                    companion.trigger_defender = true;
+                }
+            }
 
             if companion.reached_dest {
                 //in destination.
@@ -612,7 +612,14 @@ impl State {
                     }
                 }
             }
+        } else {
+            companion.reached_dest = false;
+            companion.target_building = None;
+            companion.target_defender = None;
+            companion.target_tile = None;
+            companion.current_target = None;
         }
+
         let target_mapspace_id = if let Some(current_target) = &companion.current_target {
             match current_target {
                 CompanionTarget::Building => {
