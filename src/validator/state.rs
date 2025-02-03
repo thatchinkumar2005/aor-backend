@@ -462,6 +462,7 @@ impl State {
     ) -> Option<CompanionResult> {
         let companion = self.companion.as_mut().unwrap();
         let mut building_damaged: Option<BuildingDamageResponse> = None;
+        let mut defender_damaged: Option<DefenderDamageResponse> = None;
         let is_companion_alive = companion.companion_health > 0;
 
         if is_companion_alive {
@@ -525,14 +526,29 @@ impl State {
                         }
                         CompanionTarget::Defender => {
                             let target_defender = target_defender.unwrap();
-                            for defender in &self.defenders {
-                                if defender.map_space_id == target_defender.map_space_id
-                                    && !defender.is_alive
-                                {
-                                    companion.reached_dest = false;
-                                    companion.target_building = None;
-                                    companion.target_defender = None;
-                                    companion.current_target = None;
+                            for defender in self.defenders.iter_mut() {
+                                if defender.map_space_id == target_defender.map_space_id {
+                                    if self.frame_no
+                                        >= companion.last_attack_tick + companion.attack_interval
+                                    {
+                                        log::info!("Defender attacked");
+                                        defender.current_health =
+                                            max(defender.current_health - companion.damage, 0);
+                                        companion.last_attack_tick = self.frame_no;
+                                        defender_damaged = Some(DefenderDamageResponse {
+                                            map_space_id: defender.map_space_id,
+                                            position: defender.defender_pos,
+                                            health: defender.current_health,
+                                        });
+
+                                        if defender.current_health <= 0 {
+                                            companion.reached_dest = false;
+                                            companion.target_building = None;
+                                            companion.target_defender = None;
+                                            companion.target_tile = None;
+                                            companion.current_target = None;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -590,6 +606,10 @@ impl State {
                     {
                         companion.reached_dest = true;
                     }
+                } else if let Some(current_target) = &companion.current_target {
+                    if *current_target == CompanionTarget::Defender {
+                        companion.reached_dest = true;
+                    }
                 }
             }
         }
@@ -620,6 +640,7 @@ impl State {
             current_target_tile: companion.target_tile,
             is_alive: companion.companion_health > 0,
             building_damaged,
+            defender_damaged,
         })
     }
 

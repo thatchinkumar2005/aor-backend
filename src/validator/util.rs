@@ -2,7 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::time::SystemTime;
 
-use crate::api::attack::socket::{BuildingDamageResponse, DefenderResponse};
+use crate::api::attack::socket::{
+    BuildingDamageResponse, DefenderDamageResponse, DefenderResponse,
+};
 use crate::api::attack::socket::{ResultType, SocketResponse};
 use crate::constants::COMPANION_PRIORITY;
 use crate::validator::state::State;
@@ -195,6 +197,7 @@ pub struct CompanionResult {
     pub current_target_tile: Option<Coords>,
     pub is_alive: bool,
     pub building_damaged: Option<BuildingDamageResponse>,
+    pub defender_damaged: Option<DefenderDamageResponse>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -412,7 +415,7 @@ pub fn get_companion_priority(
 
     //handle defenders
     for defender in defenders {
-        if !defender.is_alive {
+        if defender.current_health == 0 {
             continue;
         }
         let defender_pos = defender.defender_pos;
