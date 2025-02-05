@@ -434,7 +434,7 @@ pub fn get_companion_priority(
 
         let priority = COMPANION_PRIORITY.defenders + 1 / distance;
 
-        if distance <= defender.radius && priority > high_prior_defender.1 {
+        if priority > high_prior_defender.1 {
             high_prior_defender.0 = Some(defender.clone());
             high_prior_defender.1 = priority;
         }
