@@ -718,7 +718,7 @@ pub fn get_hut_defender(
     let mut hut_defender_array: Vec<DefenderDetails> = Vec::new();
     for (i, (block_type, defender_type, prop)) in hut_defenders.enumerate() {
         hut_defender_array.push(DefenderDetails {
-            map_space_id: (i + 1) as i32,
+            map_space_id: -1,
             name: defender_type.name.clone(),
             radius: prop.range,
             speed: defender_type.speed,
