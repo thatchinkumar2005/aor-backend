@@ -394,6 +394,7 @@ pub fn get_companion_priority(
         } else {
             let dist = (building.tile.x - companion.companion_pos.x).abs()
                 + (building.tile.y - companion.companion_pos.y).abs();
+
             let is_defending_building =
                 building.name == "Defender_Hut" || building.name == "Sentry";
 
@@ -411,32 +412,52 @@ pub fn get_companion_priority(
             }
         }
     }
-    if high_prior_building.0.is_some() {}
 
     //handle defenders
     for defender in defenders {
+        let companion_start_x = companion.companion_pos.x - companion.range;
+        let companion_start_y = companion.companion_pos.y - companion.range;
+        let companion_end_x = companion.companion_pos.x + companion.range;
+        let companion_end_y = companion.companion_pos.y + companion.range;
+
+        let coords = (defender.defender_pos.x, defender.defender_pos.y);
+
+        let mut visible = false;
+        if !visible {
+            if companion_start_x <= coords.0
+                && companion_end_x >= coords.0
+                && companion_start_y <= coords.1
+                && companion_end_y >= coords.1
+            {
+                visible = true;
+            }
+        } else {
+            break;
+        }
         if defender.current_health == 0 {
             continue;
         }
-        let defender_pos = defender.defender_pos;
-        let next_hop = shortest_path.get(&SourceDestXY {
-            source_x: companion.companion_pos.x,
-            source_y: companion.companion_pos.y,
-            dest_x: defender_pos.x,
-            dest_y: defender_pos.y,
-        });
+        if visible {
+            let defender_pos = defender.defender_pos;
+            let next_hop = shortest_path.get(&SourceDestXY {
+                source_x: companion.companion_pos.x,
+                source_y: companion.companion_pos.y,
+                dest_x: defender_pos.x,
+                dest_y: defender_pos.y,
+            });
 
-        if next_hop.is_none() {
-            continue;
-        }
-        let next_hop = next_hop.unwrap();
-        let distance = next_hop.l;
+            if next_hop.is_none() {
+                continue;
+            }
+            let next_hop = next_hop.unwrap();
+            let distance = next_hop.l;
 
-        let priority = COMPANION_PRIORITY.defenders + 1 / distance;
+            let priority = COMPANION_PRIORITY.defenders + 1 / distance;
 
-        if priority > high_prior_defender.1 {
-            high_prior_defender.0 = Some(defender.clone());
-            high_prior_defender.1 = priority;
+            if priority > high_prior_defender.1 {
+                high_prior_defender.0 = Some(defender.clone());
+                high_prior_defender.1 = priority;
+            }
         }
     }
     let companion_target = if high_prior_building.0.is_some() && high_prior_defender.0.is_some() {
