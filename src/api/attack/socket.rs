@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 // use crate::validator::util::Coords;
 use crate::validator::util::{
-    Attacker, BombType, BuildingDetails, BulletSpawnResponse, CompanionResult, Coords
+    Attacker, BombType, BuildingDetails, BulletSpawnResponse, CompanionResult, Coords,
     DefenderDetails, MineDetails,
 };
 

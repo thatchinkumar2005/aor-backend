@@ -108,9 +108,7 @@ async fn init_attack(
     .map_err(|err| error::handle_error(err.into()))?;
 
     for defender in opponent_base.defender_types.iter() {
-        log::info!(
-            "defender ids {} ", defender.defender_id
-        )
+        log::info!("defender ids {} ", defender.defender_id)
     }
 
     log::info!("Base details of Opponent:{} fetched", opponent_id);
@@ -518,10 +516,20 @@ async fn socket_handler(
                                     //     }
                                     // }
                                     else if response.result_type == ResultType::BuildingsDamaged {
-                                        damaged_base_items.buildings_damaged
-                                            .extend(response.damaged_base_items.clone().unwrap().buildings_damaged);
-                                        damaged_base_items.defenders_damaged
-                                            .extend(response.damaged_base_items.clone().unwrap().defenders_damaged);
+                                        damaged_base_items.buildings_damaged.extend(
+                                            response
+                                                .damaged_base_items
+                                                .clone()
+                                                .unwrap()
+                                                .buildings_damaged,
+                                        );
+                                        damaged_base_items.defenders_damaged.extend(
+                                            response
+                                                .damaged_base_items
+                                                .clone()
+                                                .unwrap()
+                                                .defenders_damaged,
+                                        );
                                         // if util::deduct_artifacts_from_building(
                                         //     response.damaged_buildings.unwrap(),
                                         //     &mut conn,

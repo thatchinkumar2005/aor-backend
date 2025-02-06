@@ -13,6 +13,7 @@ use crate::schema::{available_emps, map_layout, map_spaces, prop};
 use crate::util::function;
 use crate::{api::util::GameHistoryResponse, error::DieselError};
 use anyhow::{Ok, Result};
+use awc::http::header::map;
 use diesel::dsl::exists;
 use diesel::{prelude::*, select};
 use rand::Rng;
@@ -839,7 +840,7 @@ pub fn fetch_defender_types(
 ) -> Result<Vec<DefenderTypeResponse>> {
     use crate::schema::{block_type, defender_type};
 
-    let defenders: Result<Vec<DefenderTypeResponse>> = map_spaces::table
+    let defenders: Vec<DefenderTypeResponse> = map_spaces::table
         .inner_join(map_layout::table.on(map_layout::id.eq(map_spaces::map_id)))
         .filter(map_layout::player.eq(user_id))
         .inner_join(block_type::table.on(map_spaces::block_type_id.eq(block_type::id)))
@@ -855,24 +856,24 @@ pub fn fetch_defender_types(
             table: "map_spaces",
             function: function!(),
             error: err,
-        })?;
+        })?
+        .into_iter()
+        .map(
+            |(map_spaces, map_layout, block_type, defender_type, prop)| DefenderTypeResponse {
+                block_id: block_type.id,
+                id: map_spaces.id,
+                defender_id: defender_type.id,
+                radius: prop.range,
+                speed: defender_type.speed,
+                damage: defender_type.damage,
+                level: defender_type.level,
+                cost: defender_type.cost,
+                name: defender_type.name,
+                max_health: defender_type.max_health,
+            },
+        )
+        .collect();
 
-    let mut defenders: Vec<DefenderTypeResponse> = Vec::new();
-
-    for (map_space, (block_type, _, _, defender, prop)) in result.iter() {
-        defenders.push(DefenderTypeResponse {
-            id: defender.id,
-            defender_id: map_space.id,
-            name: defender.name.clone(),
-            radius: prop.range,
-            speed: defender.speed,
-            damage: defender.damage,
-            block_id: block_type.id,
-            level: defender.level,
-            cost: defender.cost,
-            max_health: defender.max_health,
-        })
-    }
     Ok(defenders)
 }
 

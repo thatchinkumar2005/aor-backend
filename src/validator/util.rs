@@ -88,7 +88,6 @@ pub struct DefenderDetails {
     pub block_id: i32,
     pub level: i32,
     pub current_health: i32,
-    pub max_health: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -208,6 +207,20 @@ pub struct BulletSpawnResponse {
     pub shot_time: SystemTime,
     pub target_id: i32,
     pub has_collided: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Sentry {
+    pub id: i32,
+    pub building_data: BuildingDetails,
+    pub is_sentry_activated: bool,
+    pub current_collided_bullet_id: i32,
+    pub sentry_start_time: SystemTime,
+    pub current_bullet_shot_id: i32,
+    pub current_bullet_shot_time: SystemTime,
+    pub bullets_shot: Vec<BulletSpawnResponse>,
+    pub shoot_bullet: bool,
+    pub hut_defenders_released: i32,
 }
 
 pub fn send_terminate_game_message(frame_number: i32, message: String) -> SocketResponse {

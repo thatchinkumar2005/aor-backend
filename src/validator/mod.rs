@@ -10,7 +10,7 @@ use crate::{
     validator::util::{Coords, SourceDestXY},
 };
 use anyhow::{Ok, Result};
-use util::{Companion, Path};
+use util::{Companion, CompanionResult, Path};
 
 use self::{
     state::State,
@@ -86,7 +86,7 @@ pub fn game_handler(
             for defender in _game_state.defenders.iter() {
                 log::info!(
                     "defender id : {} , position x {}, y {} ",
-                    defender.defender_id,
+                    defender.map_space_id,
                     defender.defender_pos.x,
                     defender.defender_pos.y
                 );
@@ -169,6 +169,7 @@ pub fn game_handler(
                 is_game_over: false,
                 message: Some(String::from("Placed companion")),
                 companion: None,
+                shoot_bullets: None,
             }));
         }
 
@@ -202,41 +203,6 @@ pub fn game_handler(
                 defender_damaged_result = _game_state
                     .defender_movement_one_tick(socket_request.current_position?, _shortest_path);
 
-                // for coord in attacker_delta {
-                //     let mut direction = Direction::Up;
-
-                //     let prev_pos = _game_log.e.last().unwrap().coords;
-                //     if prev_pos.x < coord.x {
-                //         direction = Direction::Down;
-                //     } else if prev_pos.x > coord.x {
-                //         direction = Direction::Up;
-                //     } else if prev_pos.y < coord.y {
-                //         direction = Direction::Left;
-                //     } else if prev_pos.y > coord.y {
-                //         direction = Direction::Right;
-                //     }
-
-                //     let event_response = EventResponse {
-                //         attacker_id: None,
-                //         bomb_id: None,
-                //         coords: coord,
-                //         direction,
-                //         is_bomb: false,
-                //     };
-
-                //     _game_log.e.push(event_response.clone());
-                // }
-
-                // let mut bool_temp = false;
-                // if attacker_result_clone.trigger_defender {
-                //     bool_temp = true;
-                // }
-                // let result_type = if attacker_result_clone.trigger_defender {
-                //     ResultType::DefendersDamaged
-                // } else {
-                //     ResultType::Nothing
-                // };
-
                 let mut is_attacker_alive = true;
 
                 if let Some(attacker) = &_game_state.attacker {
@@ -268,7 +234,17 @@ pub fn game_handler(
                     )
                     .unwrap();
 
-                let companion_res = _game_state.move_companion(_roads, _shortest_path);
+                let companion_res = _game_state
+                    .move_companion(_roads, _shortest_path)
+                    .unwrap_or(CompanionResult {
+                        current_target: None,
+                        map_space_id: -1,
+                        current_target_tile: None,
+                        is_alive: false,
+                        building_damaged: None,
+                        defender_damaged: None,
+                    });
+
                 let hut_triggered = !spawn_result.is_empty();
 
                 let result_type = if hut_triggered {
@@ -276,8 +252,27 @@ pub fn game_handler(
                 } else if defender_damaged_result.clone().defender_response.len() > 0 {
                     ResultType::DefendersDamaged
                 } else {
-                    ResultType::Nothing
+                    ResultType::BuildingsDamaged
                 };
+
+                let buildings_damaged =
+                    if let Some(building_damaged) = &companion_res.building_damaged {
+                        vec![building_damaged.clone()]
+                    } else {
+                        Vec::new()
+                    };
+
+                let defenders_damaged =
+                    if let Some(defender_damaged) = &companion_res.defender_damaged {
+                        vec![defender_damaged.clone()]
+                    } else {
+                        Vec::new()
+                    };
+
+                let damaged_base_items = Some(BaseItemsDamageResponse {
+                    buildings_damaged,
+                    defenders_damaged,
+                });
 
                 let response = SocketResponse {
                     frame_number: socket_request.frame_number,
@@ -287,7 +282,7 @@ pub fn game_handler(
                     exploded_mines: None,
                     // triggered_defenders: Some(defender_damaged_result.clone().defender_response),
                     defender_damaged: Some(defender_damaged_result.clone().defender_response),
-                    damaged_base_items: None,
+                    damaged_base_items,
                     hut_triggered,
                     hut_defenders: Some(spawn_result),
                     total_damage_percentage: Some(_game_state.damage_percentage),
@@ -295,13 +290,12 @@ pub fn game_handler(
                     is_game_over: false,
                     shoot_bullets: Some(shoot_bullets),
                     message: Some(String::from("Movement Response")),
-                    companion: companion_res,
+                    companion: Some(companion_res),
                 };
                 return Some(Ok(response));
             }
         }
         ActionType::IsMine => {
-            let shoot_bullets = _game_state.shoot_bullets();
             if _game_state.attacker.is_some() {
                 _game_state.cause_bullet_damage();
             }
@@ -353,7 +347,7 @@ pub fn game_handler(
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
-                shoot_bullets: Some(shoot_bullets),
+                shoot_bullets: None,
                 message: Some(String::from("Is Mine Response")),
                 companion: None,
             }));
@@ -443,13 +437,12 @@ pub fn game_handler(
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
-                shoot_bullets: Some(shoot_bullets),
+                shoot_bullets: None,
                 message: Some(String::from("Place Bomb Response")),
                 companion: None,
             }));
         }
         ActionType::Idle => {
-            let shoot_bullets = _game_state.shoot_bullets();
             if _game_state.attacker.is_some() {
                 _game_state.cause_bullet_damage();
             }
@@ -471,7 +464,7 @@ pub fn game_handler(
                 total_damage_percentage: Some(_game_state.damage_percentage),
                 is_sync: false,
                 is_game_over: false,
-                shoot_bullets: Some(shoot_bullets),
+                shoot_bullets: None,
                 message: Some(String::from("Idle Response")),
                 companion: None,
             }));
@@ -514,8 +507,11 @@ pub fn game_handler(
                 attacker_health,
                 exploded_mines: None,
                 // triggered_defenders: None,
-                defender_damaged: None,
-                damaged_base_items: None,
+                defender_damaged: Some(Vec::new()),
+                damaged_base_items: Some(BaseItemsDamageResponse {
+                    buildings_damaged: Vec::new(),
+                    defenders_damaged: Vec::new(),
+                }),
                 hut_triggered: false,
                 hut_defenders: None,
                 total_damage_percentage: Some(_game_state.damage_percentage),
