@@ -851,13 +851,17 @@ impl State {
                 //for attacker
                 let attacker_pos = self.attacker.as_ref().unwrap().attacker_pos;
                 let companion_pos = self.companion.as_ref().unwrap().companion_pos;
+                let companion_health = self.companion.as_ref().unwrap().companion_health;
+                let attacker_health = self.attacker.as_ref().unwrap().attacker_health;
                 let prev_state = sentry.is_sentry_activated;
                 let is_attacker_in_range = (sentry.building_data.tile.x - attacker_pos.x).abs()
                     + (sentry.building_data.tile.y - attacker_pos.y).abs()
-                    <= sentry.building_data.range;
+                    <= sentry.building_data.range
+                    && attacker_health >= 0;
                 let is_companion_in_range = (sentry.building_data.tile.x - companion_pos.x).abs()
                     + (sentry.building_data.tile.y - companion_pos.y).abs()
-                    <= sentry.building_data.range;
+                    <= sentry.building_data.range
+                    && companion_health >= 0;
 
                 sentry.is_sentry_activated = is_attacker_in_range || is_companion_in_range;
                 let new_state = sentry.is_sentry_activated;
