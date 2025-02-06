@@ -183,10 +183,10 @@ pub enum CompanionTarget {
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct CompanionPriorityResponse {
-    pub high_prior_building: (Option<BuildingDetails>, i32),
-    pub second_prior_building: (Option<BuildingDetails>, i32),
-    pub high_prior_defender: (Option<DefenderDetails>, i32),
-    pub high_prior_tile: (Option<Coords>, i32),
+    pub high_prior_building: (Option<BuildingDetails>, f64),
+    pub second_prior_building: (Option<BuildingDetails>, f64),
+    pub high_prior_defender: (Option<DefenderDetails>, f64),
+    pub high_prior_tile: (Option<Coords>, f64),
     pub current_target: Option<CompanionTarget>,
 }
 
@@ -333,10 +333,10 @@ pub fn get_companion_priority(
     roads: &HashSet<(i32, i32)>,
     shortest_path: &HashMap<SourceDestXY, Path>,
 ) -> CompanionPriorityResponse {
-    let mut high_prior_building: (Option<BuildingDetails>, i32) = (None, -1);
-    let mut high_prior_defender: (Option<DefenderDetails>, i32) = (None, -1);
-    let mut second_prior_building: (Option<BuildingDetails>, i32) = (None, -1);
-    let mut high_prior_tile: (Option<Coords>, i32) = (None, -1);
+    let mut high_prior_building: (Option<BuildingDetails>, f64) = (None, -1.0);
+    let mut high_prior_defender: (Option<DefenderDetails>, f64) = (None, -1.0);
+    let mut second_prior_building: (Option<BuildingDetails>, f64) = (None, -1.0);
+    let mut high_prior_tile: (Option<Coords>, f64) = (None, -1.0);
 
     //handle buildings
     for building in buildings {
@@ -384,9 +384,9 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.defender_buildings
             } else {
                 COMPANION_PRIORITY.buildings
-            };
+            } as f64;
 
-            let priority = priority + 1 / dist;
+            let priority = priority + 1.0 / (dist as f64);
             if priority > high_prior_building.1 {
                 high_prior_building.0 = Some(building.clone());
                 high_prior_building.1 = priority;
@@ -402,9 +402,9 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.defender_buildings
             } else {
                 COMPANION_PRIORITY.buildings
-            };
+            } as f64;
 
-            let priority = priority + 1 / dist;
+            let priority = priority + 1.0 / (dist as f64);
 
             if priority > second_prior_building.1 {
                 second_prior_building.0 = Some(building.clone());
@@ -452,7 +452,7 @@ pub fn get_companion_priority(
             let next_hop = next_hop.unwrap();
             let distance = next_hop.l;
 
-            let priority = COMPANION_PRIORITY.defenders + 1 / distance;
+            let priority = COMPANION_PRIORITY.defenders as f64 + 1.0 / (distance as f64);
 
             if priority > high_prior_defender.1 {
                 high_prior_defender.0 = Some(defender.clone());
@@ -486,9 +486,9 @@ pub fn get_companion_priority(
                     COMPANION_PRIORITY.defender_buildings
                 } else {
                     COMPANION_PRIORITY.buildings
-                };
+                } as f64;
 
-                let priority = priority + 1 / next_hop.l;
+                let priority = priority + 1.0 / (next_hop.l as f64);
                 if priority > high_prior_tile.1 {
                     high_prior_tile.0 = Some(Coords {
                         x: road_tile.0,
@@ -528,9 +528,9 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.defender_buildings
             } else {
                 COMPANION_PRIORITY.buildings
-            };
+            } as f64;
 
-            let priority = priority + 1 / next_hop.l;
+            let priority = priority + 1.0 / (next_hop.l as f64);
             if priority > high_prior_tile.1 {
                 high_prior_tile.0 = Some(Coords {
                     x: road_tile.0,
@@ -569,9 +569,9 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.defender_buildings
             } else {
                 COMPANION_PRIORITY.buildings
-            };
+            } as f64;
 
-            let priority = priority + 1 / next_hop.l;
+            let priority = priority + 1.0 / (next_hop.l as f64);
             if priority > high_prior_tile.1 {
                 high_prior_tile.0 = Some(Coords {
                     x: road_tile.0,
