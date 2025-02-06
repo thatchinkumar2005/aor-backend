@@ -36,7 +36,6 @@ pub fn game_handler(
     match socket_request.action_type {
         ActionType::PlaceAttacker => {
             _game_state.update_frame_number(socket_request.frame_number);
-            // let shoot_bullets = _game_state.shoot_bullets();
             let mut event_response = EventResponse {
                 attacker_id: None,
                 bomb_id: None,
@@ -174,10 +173,6 @@ pub fn game_handler(
         }
 
         ActionType::MoveAttacker => {
-            let shoot_bullets = _game_state.shoot_bullets();
-            if _game_state.attacker.is_some() {
-                _game_state.cause_bullet_damage();
-            }
             if let Some(attacker_id) = socket_request.attacker_id {
                 let attacker: AttackerType = attacker_type.get(&attacker_id).unwrap().clone();
                 // let attacker_delta: Vec<Coords> = socket_request.attacker_path;
@@ -233,6 +228,12 @@ pub fn game_handler(
                         // },
                     )
                     .unwrap();
+
+                _game_state.activate_sentry();
+                let shoot_bullets = _game_state.shoot_bullets();
+                if _game_state.attacker.is_some() || _game_state.attacker.is_some() {
+                    _game_state.cause_bullet_damage();
+                }
 
                 let companion_res = _game_state
                     .move_companion(_roads, _shortest_path)
@@ -296,9 +297,6 @@ pub fn game_handler(
             }
         }
         ActionType::IsMine => {
-            if _game_state.attacker.is_some() {
-                _game_state.cause_bullet_damage();
-            }
             // is_mine
             let start_pos: Option<Coords> = socket_request.current_position;
             exploded_mines_result = _game_state.mine_blast(start_pos);
@@ -353,10 +351,6 @@ pub fn game_handler(
             }));
         }
         ActionType::PlaceBombs => {
-            let shoot_bullets = _game_state.shoot_bullets();
-            if _game_state.attacker.is_some() {
-                _game_state.cause_bullet_damage();
-            }
             // let attacker_delta: Vec<Coords> = socket_request.attacker_path.clone();
             let current_pos = socket_request.current_position.unwrap();
             let bomb_coords = socket_request.bomb_position;
@@ -443,9 +437,6 @@ pub fn game_handler(
             }));
         }
         ActionType::Idle => {
-            if _game_state.attacker.is_some() {
-                _game_state.cause_bullet_damage();
-            }
             let attacker_health = _game_state
                 .attacker
                 .as_ref()

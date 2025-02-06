@@ -128,6 +128,7 @@ impl State {
                     building_data: building.clone(),
                     bullets_shot: Vec::new(),
                     hut_defenders_released: 0,
+                    target_id: -1,
                 });
             }
         }
@@ -170,12 +171,13 @@ impl State {
     pub fn place_attacker(&mut self, attacker: Attacker) {
         let attacker_position = attacker.attacker_pos;
         self.attacker = Some(attacker);
-        self.activate_sentry(attacker_position);
+        //self.activate_sentry(attacker_position, 0);
         // println!("defnders: {:?}",self.defenders);
     }
 
     pub fn place_companion(&mut self, companion: Companion) {
         self.companion = Some(companion);
+        //self.activate_sentry(self.companion.as_ref().unwrap().companion_pos.clone(), 1);
     }
 
     pub fn mine_blast_update(&mut self, _id: i32, damage_to_attacker: i32) {
@@ -308,10 +310,11 @@ impl State {
             // }
             // coord_temp = coord;
         }
-        self.activate_sentry(attacker_current.attacker_pos.clone());
+        //self.activate_sentry(attacker_current.attacker_pos.clone(), 0);
 
         self.frame_no += 1;
         attacker.attacker_pos = attacker_current.attacker_pos;
+        self.attacker.as_mut().unwrap().attacker_pos = attacker_current.attacker_pos.clone();
 
         let attacker_result = Attacker {
             id: attacker.id,
@@ -466,7 +469,6 @@ impl State {
                     match current_target {
                         CompanionTarget::Building => {
                             let target_building = target_building.unwrap();
-                            let mut artifacts_taken_by_destroying_building: i32;
                             for building in self.buildings.iter_mut() {
                                 if building.map_space_id == target_building.map_space_id {
                                     if self.frame_no
@@ -824,7 +826,7 @@ impl State {
         base_items_damaged
     }
 
-    pub fn activate_sentry(&mut self, new_pos: Coords) {
+    pub fn activate_sentry(&mut self) {
         for sentry in self.sentries.iter_mut() {
             let mut current_sentry_data: BuildingDetails = BuildingDetails {
                 map_space_id: 0,
@@ -844,27 +846,48 @@ impl State {
                     current_sentry_data = building.clone();
                 }
             }
+
             if current_sentry_data.current_hp > 0 {
+                //for attacker
+                let attacker_pos = self.attacker.as_ref().unwrap().attacker_pos;
+                let companion_pos = self.companion.as_ref().unwrap().companion_pos;
                 let prev_state = sentry.is_sentry_activated;
-                sentry.is_sentry_activated = (sentry.building_data.tile.x - new_pos.x).abs()
-                    + (sentry.building_data.tile.y - new_pos.y).abs()
+                let is_attacker_in_range = (sentry.building_data.tile.x - attacker_pos.x).abs()
+                    + (sentry.building_data.tile.y - attacker_pos.y).abs()
                     <= sentry.building_data.range;
+                let is_companion_in_range = (sentry.building_data.tile.x - companion_pos.x).abs()
+                    + (sentry.building_data.tile.y - companion_pos.y).abs()
+                    <= sentry.building_data.range;
+
+                sentry.is_sentry_activated = is_attacker_in_range || is_companion_in_range;
                 let new_state = sentry.is_sentry_activated;
+
+                log::info!("is_companion_in_range: {is_companion_in_range}");
+                log::info!("is_attacker_in_range: {is_attacker_in_range}");
+
                 if prev_state != new_state && new_state == true {
                     log::info!("sentry activated");
                     sentry.sentry_start_time = SystemTime::now();
+                    if is_attacker_in_range {
+                        sentry.target_id = 0;
+                    } else if is_companion_in_range {
+                        sentry.target_id = 1;
+                    }
                 } else if prev_state != new_state && new_state == false {
                     log::info!("sentry deactivated");
                     sentry.current_bullet_shot_time = SystemTime::now() - Duration::new(2, 0);
+                    sentry.target_id = -1;
                 }
             } else {
                 sentry.is_sentry_activated = false;
+                sentry.target_id = -1;
             }
         }
     }
 
     pub fn cause_bullet_damage(&mut self) {
         let attacker = self.attacker.as_mut().unwrap();
+        let companion = self.companion.as_mut().unwrap();
         if attacker.attacker_health <= 0 {
             for sentry in self.sentries.iter_mut() {
                 for bullet in sentry.bullets_shot.iter_mut() {
@@ -881,13 +904,24 @@ impl State {
                         >= BULLET_COLLISION_TIME
                         && !bullet.has_collided
                     {
-                        self.attacker.as_mut().unwrap().attacker_health -= bullet.damage;
-                        log::info!(
-                            "ATTACKER HEALTH : {}, bullet_id {}",
-                            self.attacker.as_mut().unwrap().attacker_health,
-                            bullet.bullet_id
-                        );
-                        bullet.has_collided = true;
+                        if bullet.target_id == 0 {
+                            attacker.attacker_health =
+                                max(0, attacker.attacker_health - bullet.damage);
+                            log::info!(
+                                "ATTACKER HEALTH : {}, bullet_id {}",
+                                attacker.attacker_health,
+                                bullet.bullet_id
+                            );
+                            bullet.has_collided = true;
+                        } else if bullet.target_id == 1 {
+                            companion.companion_health =
+                                max(0, companion.companion_health - bullet.damage);
+                            log::info!(
+                                "COMPANION HEALTH : {}, bullet_id {}",
+                                companion.companion_health,
+                                bullet.bullet_id
+                            );
+                        }
                     }
                 }
             }
@@ -926,7 +960,7 @@ impl State {
                     sentry_id: sentry.id,
                     damage: bullet_damage,
                     has_collided: false,
-                    target_id: 0,
+                    target_id: sentry.target_id,
                 };
                 log::info!(
                     "bullet {} from sentry {}",

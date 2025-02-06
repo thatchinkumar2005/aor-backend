@@ -221,6 +221,7 @@ pub struct Sentry {
     pub bullets_shot: Vec<BulletSpawnResponse>,
     pub shoot_bullet: bool,
     pub hut_defenders_released: i32,
+    pub target_id: i32,
 }
 
 pub fn send_terminate_game_message(frame_number: i32, message: String) -> SocketResponse {
