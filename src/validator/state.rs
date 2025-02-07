@@ -628,10 +628,8 @@ impl State {
                     {
                         companion.reached_dest = true;
                     }
-                } else if let Some(current_target) = &companion.current_target {
-                    if *current_target == CompanionTarget::Defender {
-                        companion.reached_dest = true;
-                    }
+                } else {
+                    companion.reached_dest = true;
                 }
             }
         } else {
