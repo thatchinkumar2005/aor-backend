@@ -246,6 +246,8 @@ pub fn game_handler(
                         defender_damaged: None,
                     });
 
+                _game_state.defender_trigger();
+
                 let hut_triggered = !spawn_result.is_empty();
 
                 let result_type = if hut_triggered {

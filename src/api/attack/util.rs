@@ -735,22 +735,6 @@ pub fn get_hut_defender(
         });
         log::info!("hut_defenders {:?}", i);
     }
-
-    // .map(|(block_type, defender_type, prop)| DefenderDetails {
-    //     mapSpaceId: i + 1,
-    //     name: defender_type.name.clone(),
-    //     radius: prop.range,
-    //     speed: defender_type.speed,
-    //     damage: defender_type.damage,
-    //     defender_pos: Coords { x: 0, y: 0 },
-    //     is_alive: true,
-    //     damage_dealt: false,
-    //     target_id: None,
-    //     path_in_current_frame: Vec::new(),
-    //     block_id: block_type.id,
-    //     level: defender_type.level,
-    // })
-    // .collect();
     log::info!("hut_defenders array {:?}", hut_defender_array);
 
     let joined_table = map_spaces::table
@@ -772,28 +756,12 @@ pub fn get_hut_defender(
         .collect();
 
     log::info!("hut defeners {:?}", hut_defender_array);
-    // let mut hut_defenders_res: HashMap<i32, Vec<DefenderDetails>> = HashMap::new();
-    // for (i, hut) in huts.iter().enumerate() {
-    //     // log::info!("hut mapspaceid{:?}", hut.0);
-    //     // if let Some(hut_defender) = hut_defender_array.iter().find(|hd| hd.level == hut.1) {
-    //     //     hut_defenders_res.insert(hut.0, hut_defender.clone());
-    //     // }
-    //     for (i, hut_defender) in hut_defender_array.iter().enumerate() {
-    //         if hut_defender.level == hut.1 {
-    //             hut_defenders_res
-    //                 .entry(hut.0)
-    //                 .or_insert_with(Vec::new)
-    //                 .push(hut_defender.clone());
-    //         }
-    //     }
-    // }
     let mut hut_defenders_res: HashMap<i32, DefenderDetails> = HashMap::new();
-    for (i, hut) in huts.iter().enumerate() {
-        // log::info!("hut mapspaceid{:?}", hut.0);
-        // if let Some(hut_defender) = hut_defender_array.iter().find(|hd| hd.level == hut.1) {
-        //     hut_defenders_res.insert(hut.0, hut_defender.clone());
-        // }
-        hut_defenders_res.insert(hut.0, hut_defender_array[i].clone());
+    for hut in huts.iter() {
+        log::info!("hut mapspaceid{:?}", hut.0);
+        if let Some(hut_defender) = hut_defender_array.iter().find(|hd| hd.level == hut.1) {
+            hut_defenders_res.insert(hut.0, hut_defender.clone());
+        }
     }
     log::info!("{:?}", hut_defenders_res);
     Ok(hut_defenders_res)

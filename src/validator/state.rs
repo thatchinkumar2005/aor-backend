@@ -293,25 +293,6 @@ impl State {
             }
         }
 
-        for defender in self.defenders.iter_mut() {
-            if defender.target_id.is_none()
-                && defender.is_alive
-                && (((defender.defender_pos.x - attacker_current.attacker_pos.x).abs()
-                    + (defender.defender_pos.y - attacker_current.attacker_pos.y).abs())
-                    <= defender.radius)
-            {
-                // println!(
-                //     "defender triggered when attacker was at ---- x:{}, y:{} and defender id: {}",
-                //     new_pos.x, new_pos.y, defender.id
-                // );
-                defender.target_id = Some(DefenderTarget::Attacker);
-                attacker.trigger_defender = true;
-            }
-            // }
-            // coord_temp = coord;
-        }
-        //self.activate_sentry(attacker_current.attacker_pos.clone(), 0);
-
         self.frame_no += 1;
         attacker.attacker_pos = attacker_current.attacker_pos;
         self.attacker.as_mut().unwrap().attacker_pos = attacker_current.attacker_pos.clone();
@@ -327,6 +308,45 @@ impl State {
             bomb_count: attacker.bomb_count,
         };
         Some(attacker_result)
+    }
+
+    pub fn defender_trigger(&mut self) {
+        let companion = self.companion.as_mut().unwrap();
+        let attacker = self.attacker.as_mut().unwrap();
+
+        for defender in self.defenders.iter_mut() {
+            if defender.name == "Hut_Defender" {
+                log::info!("Hut Defender Target: {:?}", defender.target_id);
+            }
+            if defender.target_id.is_none() && defender.current_health > 0 {
+                if defender.name == "Hut_Defender" {
+                    defender.target_id = Some(DefenderTarget::Attacker);
+                    attacker.trigger_defender = true;
+                    log::info!("Hut Defender Target: {:?}", defender.target_id);
+                } else {
+                    let attacker_manhattan_dist =
+                        (defender.defender_pos.x - attacker.attacker_pos.x).abs()
+                            + (defender.defender_pos.y - attacker.attacker_pos.y).abs();
+                    let companion_manhattan_dist =
+                        (defender.defender_pos.x - companion.companion_pos.x).abs()
+                            + (defender.defender_pos.y - companion.companion_pos.y).abs();
+
+                    if attacker_manhattan_dist <= defender.radius
+                        || companion_manhattan_dist <= defender.radius
+                    {
+                        if attacker_manhattan_dist < companion_manhattan_dist {
+                            defender.target_id = Some(DefenderTarget::Attacker);
+                            attacker.trigger_defender = true;
+                        } else if companion_manhattan_dist < attacker_manhattan_dist {
+                            defender.target_id = Some(DefenderTarget::Companion);
+                            companion.trigger_defender = true;
+                        } else {
+                            defender.target_id = None;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub fn spawn_hut_defender(
@@ -445,19 +465,6 @@ impl State {
 
         if is_companion_alive {
             //defender logic
-
-            for defender in self.defenders.iter_mut() {
-                if defender.target_id.is_none()
-                    && defender.is_alive
-                    && (((defender.defender_pos.x - companion.companion_pos.x).abs()
-                        + (defender.defender_pos.y - companion.companion_pos.y).abs())
-                        <= defender.radius)
-                {
-                    defender.target_id = Some(DefenderTarget::Companion);
-                    companion.trigger_defender = true;
-                }
-            }
-
             if companion.reached_dest {
                 //in destination.
                 let target_building = companion.target_building.clone();
@@ -866,9 +873,6 @@ impl State {
                 sentry.is_sentry_activated = is_attacker_in_range || is_companion_in_range;
                 let new_state = sentry.is_sentry_activated;
 
-                log::info!("is_companion_in_range: {is_companion_in_range}");
-                log::info!("is_attacker_in_range: {is_attacker_in_range}");
-
                 if prev_state != new_state && new_state == true {
                     log::info!("sentry activated");
                     sentry.sentry_start_time = SystemTime::now();
@@ -925,6 +929,7 @@ impl State {
                                 companion.companion_health,
                                 bullet.bullet_id
                             );
+                            bullet.has_collided = true;
                         }
                     }
                 }
