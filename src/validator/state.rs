@@ -5,7 +5,8 @@ use std::{
 };
 
 use super::util::{
-    select_side_hut_defender, BombType, BulletSpawnResponse, HutDefenderDetails, Sentry,
+    select_side_hut_defender, BombType, BulletSpawnResponse, HutDefenderDetails, MineResponse,
+    Sentry,
 };
 use crate::api::attack::socket::BaseItemsDamageResponse;
 use crate::constants::{
@@ -180,8 +181,14 @@ impl State {
         //self.activate_sentry(self.companion.as_ref().unwrap().companion_pos.clone(), 1);
     }
 
-    pub fn mine_blast_update(&mut self, _id: i32, damage_to_attacker: i32) {
+    pub fn mine_blast_update(
+        &mut self,
+        _id: i32,
+        damage_to_attacker: i32,
+        damage_to_companion: i32,
+    ) {
         let attacker = self.attacker.as_mut().unwrap();
+        let companion = self.companion.as_mut().unwrap();
 
         if attacker.attacker_health > 0 {
             attacker.attacker_health =
@@ -193,6 +200,11 @@ impl State {
                 }
                 attacker.attacker_pos = Coords { x: -1, y: -1 };
             }
+        }
+
+        if companion.companion_health > 0 {
+            companion.companion_health =
+                std::cmp::max(0, companion.companion_health - damage_to_companion);
         }
 
         self.mines.retain(|mine| mine.id != _id);
@@ -307,6 +319,12 @@ impl State {
             trigger_defender: attacker.trigger_defender,
             bomb_count: attacker.bomb_count,
         };
+
+        log::info!(
+            "attacker health: {}, companion health: {}",
+            self.attacker.as_ref().unwrap().attacker_health,
+            self.companion.as_ref().unwrap().companion_health
+        );
         Some(attacker_result)
     }
 
@@ -315,14 +333,11 @@ impl State {
         let attacker = self.attacker.as_mut().unwrap();
 
         for defender in self.defenders.iter_mut() {
-            if defender.name == "Hut_Defender" {
-                log::info!("Hut Defender Target: {:?}", defender.target_id);
-            }
-            if defender.target_id.is_none() && defender.current_health > 0 {
+            if defender.target_id.is_none() && defender.is_alive {
                 if defender.name == "Hut_Defender" {
+                    log::info!("Hut Defender{} alive", defender.map_space_id);
                     defender.target_id = Some(DefenderTarget::Attacker);
                     attacker.trigger_defender = true;
-                    log::info!("Hut Defender Target: {:?}", defender.target_id);
                 } else {
                     let attacker_manhattan_dist =
                         (defender.defender_pos.x - attacker.attacker_pos.x).abs()
@@ -331,18 +346,33 @@ impl State {
                         (defender.defender_pos.x - companion.companion_pos.x).abs()
                             + (defender.defender_pos.y - companion.companion_pos.y).abs();
 
-                    if attacker_manhattan_dist <= defender.radius
-                        || companion_manhattan_dist <= defender.radius
+                    if companion_manhattan_dist <= defender.radius
+                        && attacker_manhattan_dist <= defender.radius
                     {
-                        if attacker_manhattan_dist < companion_manhattan_dist {
+                        if attacker_manhattan_dist <= companion_manhattan_dist {
                             defender.target_id = Some(DefenderTarget::Attacker);
                             attacker.trigger_defender = true;
-                        } else if companion_manhattan_dist < attacker_manhattan_dist {
+                        } else {
+                            if companion.companion_health > 0 {
+                                defender.target_id = Some(DefenderTarget::Companion);
+                                companion.trigger_defender = true;
+                            } else {
+                                defender.target_id = Some(DefenderTarget::Attacker);
+                                attacker.trigger_defender = true;
+                            }
+                        }
+                    } else if companion_manhattan_dist <= defender.radius {
+                        if companion.companion_health > 0 {
                             defender.target_id = Some(DefenderTarget::Companion);
                             companion.trigger_defender = true;
                         } else {
                             defender.target_id = None;
                         }
+                    } else if attacker_manhattan_dist <= defender.radius {
+                        defender.target_id = Some(DefenderTarget::Attacker);
+                        attacker.trigger_defender = true;
+                    } else {
+                        defender.target_id = None;
                     }
                 }
             }
@@ -675,22 +705,53 @@ impl State {
         self.bomb_blast(bomb_position)
     }
 
-    pub fn mine_blast(&mut self, start_pos: Option<Coords>) -> Vec<MineDetails> {
-        let mut damage_to_attacker;
+    pub fn mine_blast(&mut self, start_pos: Option<Coords>) -> Vec<MineResponse> {
+        let mut damage_to_attacker = 0;
+        let mut damage_to_companion = 0;
         let attack_current_pos = start_pos.unwrap();
+        let companion_current_pos = self.companion.as_ref().unwrap().companion_pos.clone();
 
-        let mut triggered_mines: Vec<MineDetails> = Vec::new();
+        let mut triggered_mines: Vec<MineResponse> = Vec::new();
 
         for mine in self.mines.clone().iter_mut() {
-            if attack_current_pos.x == mine.position.x && attack_current_pos.y == mine.position.y {
+            if (attack_current_pos.x == mine.position.x && attack_current_pos.y == mine.position.y)
+                && (companion_current_pos.x == mine.position.x
+                    && companion_current_pos.y == mine.position.y)
+            {
                 damage_to_attacker = mine.damage;
-                triggered_mines.push(MineDetails {
+                damage_to_companion = mine.damage;
+                triggered_mines.push(MineResponse {
                     id: mine.id,
                     position: mine.position,
                     radius: mine.radius,
                     damage: mine.damage,
+                    target_id: 2,
                 });
-                self.mine_blast_update(mine.id, damage_to_attacker);
+                self.mine_blast_update(mine.id, damage_to_attacker, damage_to_companion);
+            } else if attack_current_pos.x == mine.position.x
+                && attack_current_pos.y == mine.position.y
+            {
+                damage_to_attacker = mine.damage;
+                triggered_mines.push(MineResponse {
+                    id: mine.id,
+                    position: mine.position,
+                    radius: mine.radius,
+                    damage: mine.damage,
+                    target_id: 0,
+                });
+                self.mine_blast_update(mine.id, damage_to_attacker, damage_to_companion);
+            } else if companion_current_pos.x == mine.position.x
+                && companion_current_pos.y == mine.position.y
+            {
+                damage_to_companion = mine.damage;
+                triggered_mines.push(MineResponse {
+                    id: mine.id,
+                    position: mine.position,
+                    radius: mine.radius,
+                    damage: mine.damage,
+                    target_id: 1,
+                });
+                self.mine_blast_update(mine.id, damage_to_attacker, damage_to_companion);
             }
         }
 

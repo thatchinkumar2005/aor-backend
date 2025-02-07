@@ -107,6 +107,15 @@ pub struct MineDetails {
     pub damage: i32,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MineResponse {
+    pub id: i32,
+    pub position: Coords,
+    pub radius: i32,
+    pub damage: i32,
+    pub target_id: i32,
+}
+
 #[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct BombType {
     pub id: i32,

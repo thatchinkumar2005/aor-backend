@@ -1,9 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 // use crate::validator::util::Coords;
-use crate::validator::util::{
-    Attacker, BombType, BuildingDetails, BulletSpawnResponse, CompanionResult, Coords,
-    DefenderDetails, MineDetails,
+use crate::validator::{
+    self,
+    util::{
+        Attacker, BombType, BuildingDetails, BulletSpawnResponse, CompanionResult, Coords,
+        DefenderDetails, MineDetails,
+    },
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -24,7 +27,7 @@ pub struct SocketResponse {
     pub result_type: ResultType,
     pub is_alive: Option<bool>,
     pub attacker_health: Option<i32>,
-    pub exploded_mines: Option<Vec<MineDetails>>,
+    pub exploded_mines: Option<Vec<validator::util::MineResponse>>,
     // pub triggered_defenders: Option<Vec<DefenderResponse>>,
     pub defender_damaged: Option<Vec<DefenderResponse>>,
     pub hut_triggered: bool,

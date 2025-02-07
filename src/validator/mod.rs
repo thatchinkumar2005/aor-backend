@@ -10,7 +10,7 @@ use crate::{
     validator::util::{Coords, SourceDestXY},
 };
 use anyhow::{Ok, Result};
-use util::{Companion, CompanionResult, Path};
+use util::{Companion, CompanionResult, MineResponse, Path};
 
 use self::{
     state::State,
@@ -31,7 +31,7 @@ pub fn game_handler(
     mut _game_log: &mut GameLog,
 ) -> Option<Result<SocketResponse>> {
     let defender_damaged_result: DefenderReturnType;
-    let exploded_mines_result: Vec<MineDetails>;
+    let exploded_mines_result: Vec<MineResponse>;
     let base_items_damaged_result: BaseItemsDamageResponse;
     match socket_request.action_type {
         ActionType::PlaceAttacker => {
