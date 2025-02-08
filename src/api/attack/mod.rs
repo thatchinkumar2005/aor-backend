@@ -6,18 +6,21 @@ use super::defense::util::{
 };
 use super::user::util::fetch_user;
 use super::{error, PgPool, RedisPool};
-use crate::api::attack::socket::{BuildingResponse, ResultType, SocketRequest, SocketResponse};
+use crate::api::attack::socket::{
+    BuildingDamageResponse, ResultType, SocketRequest, SocketResponse,
+};
 use crate::api::util::HistoryboardQuery;
 use crate::constants::{GAME_AGE_IN_MINUTES, MAX_BOMBS_PER_ATTACK};
 use crate::models::{AttackerType, User};
 use crate::validator::state::State;
-use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails};
+use crate::validator::util::{BombType, BuildingDetails, DefenderDetails, MineDetails, Path};
 use crate::validator::util::{Coords, SourceDestXY};
 use actix_rt;
 use actix_web::error::ErrorBadRequest;
 use actix_web::web::{Data, Json};
 use actix_web::{web, Error, HttpRequest, HttpResponse, Responder, Result};
 use log;
+use socket::BaseItemsDamageResponse;
 use std::collections::{HashMap, HashSet};
 use std::time;
 
@@ -103,6 +106,10 @@ async fn init_attack(
     })
     .await?
     .map_err(|err| error::handle_error(err.into()))?;
+
+    for defender in opponent_base.defender_types.iter() {
+        log::info!("defender ids {} ", defender.defender_id)
+    }
 
     log::info!("Base details of Opponent:{} fetched", opponent_id);
 
@@ -272,7 +279,7 @@ async fn socket_handler(
     let mut conn = pool.get().map_err(|err| error::handle_error(err.into()))?;
 
     let shortest_paths = web::block(move || {
-        Ok(run_shortest_paths(&mut conn, map_id)?) as anyhow::Result<HashMap<SourceDestXY, Coords>>
+        Ok(run_shortest_paths(&mut conn, map_id)?) as anyhow::Result<HashMap<SourceDestXY, Path>>
     })
     .await?
     .map_err(|err| error::handle_error(err.into()))?;
@@ -367,7 +374,10 @@ async fn socket_handler(
         return Err(ErrorBadRequest("Internal Server Error"));
     }
 
-    let mut damaged_buildings: Vec<BuildingResponse> = Vec::new();
+    let mut damaged_base_items: BaseItemsDamageResponse = BaseItemsDamageResponse {
+        buildings_damaged: Vec::new(),
+        defenders_damaged: Vec::new(),
+    };
 
     let game_log = GameLog {
         g: game_id,
@@ -475,7 +485,7 @@ async fn socket_handler(
                                         if util::terminate_game(
                                             game_logs,
                                             &mut conn,
-                                            &damaged_buildings,
+                                            &damaged_base_items.buildings_damaged,
                                             &mut redis_conn,
                                         )
                                         .is_err()
@@ -506,8 +516,20 @@ async fn socket_handler(
                                     //     }
                                     // }
                                     else if response.result_type == ResultType::BuildingsDamaged {
-                                        damaged_buildings
-                                            .extend(response.damaged_buildings.unwrap());
+                                        damaged_base_items.buildings_damaged.extend(
+                                            response
+                                                .damaged_base_items
+                                                .clone()
+                                                .unwrap()
+                                                .buildings_damaged,
+                                        );
+                                        damaged_base_items.defenders_damaged.extend(
+                                            response
+                                                .damaged_base_items
+                                                .clone()
+                                                .unwrap()
+                                                .defenders_damaged,
+                                        );
                                         // if util::deduct_artifacts_from_building(
                                         //     response.damaged_buildings.unwrap(),
                                         //     &mut conn,
@@ -562,7 +584,7 @@ async fn socket_handler(
                     if util::terminate_game(
                         game_logs,
                         &mut conn,
-                        &damaged_buildings,
+                        &damaged_base_items.buildings_damaged,
                         &mut redis_conn,
                     )
                     .is_err()
@@ -614,12 +636,13 @@ async fn socket_handler(
                     defender_damaged: None,
                     hut_triggered: false,
                     hut_defenders: None,
-                    damaged_buildings: None,
+                    damaged_base_items: None,
                     total_damage_percentage: None,
                     is_sync: false,
                     shoot_bullets: None,
                     is_game_over: true,
                     message: Some("Connection timed out".to_string()),
+                    companion: None,
                 })
                 .unwrap();
                 if session_clone2.text(response_json).await.is_err() {

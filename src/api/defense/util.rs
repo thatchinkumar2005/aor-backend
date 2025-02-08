@@ -13,11 +13,12 @@ use crate::schema::{available_emps, map_layout, map_spaces, prop};
 use crate::util::function;
 use crate::{api::util::GameHistoryResponse, error::DieselError};
 use anyhow::{Ok, Result};
+use awc::http::header::map;
 use diesel::dsl::exists;
 use diesel::{prelude::*, select};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Serialize, Clone)]
 pub struct MapSpacesResponseWithArifacts {
@@ -58,6 +59,7 @@ pub struct MineTypeResponse {
 #[derive(Serialize, Clone)]
 pub struct DefenderTypeResponse {
     pub id: i32,
+    pub defender_id: i32,
     pub radius: i32,
     pub speed: i32,
     pub damage: i32,
@@ -838,35 +840,41 @@ pub fn fetch_defender_types(
 ) -> Result<Vec<DefenderTypeResponse>> {
     use crate::schema::{block_type, defender_type};
 
-    let defenders: Result<Vec<DefenderTypeResponse>> = map_spaces::table
+    let defenders: Vec<DefenderTypeResponse> = map_spaces::table
         .inner_join(map_layout::table.on(map_layout::id.eq(map_spaces::map_id)))
         .filter(map_layout::player.eq(user_id))
         .inner_join(block_type::table.on(map_spaces::block_type_id.eq(block_type::id)))
         .filter(block_type::category.eq(BlockCategory::Defender))
-        .inner_join(defender_type::table.on(block_type::defender_type.assume_not_null().eq(defender_type::id)))
+        .inner_join(
+            defender_type::table.on(block_type::defender_type
+                .assume_not_null()
+                .eq(defender_type::id)),
+        )
         .inner_join(prop::table.on(prop::id.eq(defender_type::prop_id)))
         .load::<(MapSpaces, MapLayout, BlockType, DefenderType, Prop)>(conn)
         .map_err(|err| DieselError {
-            table: "defender_type",
+            table: "map_spaces",
             function: function!(),
             error: err,
         })?
         .into_iter()
-        .map(|(_, _, block_type, defender_type, prop)| {
-            Ok(DefenderTypeResponse {
-                id: defender_type.id,
+        .map(
+            |(map_spaces, map_layout, block_type, defender_type, prop)| DefenderTypeResponse {
+                block_id: block_type.id,
+                id: map_spaces.id,
+                defender_id: defender_type.id,
                 radius: prop.range,
                 speed: defender_type.speed,
                 damage: defender_type.damage,
-                block_id: block_type.id,
                 level: defender_type.level,
                 cost: defender_type.cost,
                 name: defender_type.name,
                 max_health: defender_type.max_health,
-            })
-        })
+            },
+        )
         .collect();
-    defenders
+
+    Ok(defenders)
 }
 
 pub fn fetch_building_blocks(
