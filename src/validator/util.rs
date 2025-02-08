@@ -410,7 +410,7 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.buildings
             } as f64;
 
-            let priority = priority + 1.0 / (dist as f64);
+            let priority = priority + 1.0 / ((dist + 1) as f64);
             if priority > high_prior_building.1 {
                 high_prior_building.0 = Some(building.clone());
                 high_prior_building.1 = priority;
@@ -428,7 +428,7 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.buildings
             } as f64;
 
-            let priority = priority + 1.0 / (dist as f64);
+            let priority = priority + 1.0 / ((dist + 1) as f64);
 
             if priority > second_prior_building.1 {
                 second_prior_building.0 = Some(building.clone());
@@ -470,13 +470,13 @@ pub fn get_companion_priority(
                 dest_y: defender_pos.y,
             });
 
-            if next_hop.is_none() {
-                continue;
-            }
-            let next_hop = next_hop.unwrap();
-            let distance = next_hop.l;
+            let distance = if let Some(next_hop) = next_hop {
+                next_hop.l
+            } else {
+                0
+            };
 
-            let priority = COMPANION_PRIORITY.defenders as f64 + 1.0 / (distance as f64);
+            let priority = COMPANION_PRIORITY.defenders as f64 + 1.0 / ((distance + 1) as f64);
 
             if priority > high_prior_defender.1 {
                 high_prior_defender.0 = Some(defender.clone());
@@ -496,12 +496,12 @@ pub fn get_companion_priority(
                     dest_x: road_tile.0,
                     dest_y: road_tile.1,
                 });
-                let default_next_hop = Path {
-                    x: companion.companion_pos.x,
-                    y: companion.companion_pos.y,
-                    l: 1000000,
+
+                let distance = if let Some(next_hop) = next_hop {
+                    next_hop.l
+                } else {
+                    0
                 };
-                let next_hop = next_hop.unwrap_or(&default_next_hop);
 
                 let is_defending_building =
                     building.name == "Defender_Hut" || building.name == "Sentry";
@@ -512,7 +512,7 @@ pub fn get_companion_priority(
                     COMPANION_PRIORITY.buildings
                 } as f64;
 
-                let priority = priority + 1.0 / (next_hop.l as f64);
+                let priority = priority + 1.0 / ((distance + 1) as f64);
                 if priority > high_prior_tile.1 {
                     high_prior_tile.0 = Some(Coords {
                         x: road_tile.0,
@@ -538,12 +538,12 @@ pub fn get_companion_priority(
                 dest_x: road_tile.0,
                 dest_y: road_tile.1,
             });
-            let default_next_hop = Path {
-                x: companion.companion_pos.x,
-                y: companion.companion_pos.y,
-                l: 1000000,
+
+            let distance = if let Some(next_hop) = next_hop {
+                next_hop.l
+            } else {
+                0
             };
-            let next_hop = next_hop.unwrap_or(&default_next_hop);
 
             let is_defending_building =
                 building.name == "Defender_Hut" || building.name == "Sentry";
@@ -554,7 +554,7 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.buildings
             } as f64;
 
-            let priority = priority + 1.0 / (next_hop.l as f64);
+            let priority = priority + 1.0 / ((distance + 1) as f64);
             if priority > high_prior_tile.1 {
                 high_prior_tile.0 = Some(Coords {
                     x: road_tile.0,
@@ -579,12 +579,12 @@ pub fn get_companion_priority(
                 dest_x: road_tile.0,
                 dest_y: road_tile.1,
             });
-            let default_next_hop = Path {
-                x: companion.companion_pos.x,
-                y: companion.companion_pos.y,
-                l: 1000000,
+
+            let distance = if let Some(next_hop) = next_hop {
+                next_hop.l
+            } else {
+                0
             };
-            let next_hop = next_hop.unwrap_or(&default_next_hop);
 
             let is_defending_building =
                 building.name == "Defender_Hut" || building.name == "Sentry";
@@ -595,7 +595,7 @@ pub fn get_companion_priority(
                 COMPANION_PRIORITY.buildings
             } as f64;
 
-            let priority = priority + 1.0 / (next_hop.l as f64);
+            let priority = priority + 1.0 / ((distance + 1) as f64);
             if priority > high_prior_tile.1 {
                 high_prior_tile.0 = Some(Coords {
                     x: road_tile.0,
