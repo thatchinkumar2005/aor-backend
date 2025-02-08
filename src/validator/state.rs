@@ -347,7 +347,7 @@ impl State {
                             + (defender.defender_pos.y - companion.companion_pos.y).abs();
 
                     if companion_manhattan_dist <= defender.radius
-                        && attacker_manhattan_dist <= defender.radius
+                        || attacker_manhattan_dist <= defender.radius
                     {
                         if attacker_manhattan_dist <= companion_manhattan_dist {
                             defender.target_id = Some(DefenderTarget::Attacker);
