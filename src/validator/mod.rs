@@ -242,6 +242,7 @@ pub fn game_handler(
                         map_space_id: -1,
                         current_target_tile: None,
                         is_alive: false,
+                        health: -1,
                         building_damaged: None,
                         defender_damaged: None,
                     });

@@ -204,6 +204,7 @@ pub struct CompanionResult {
     pub map_space_id: i32,
     pub current_target_tile: Option<Coords>,
     pub is_alive: bool,
+    pub health: i32,
     pub building_damaged: Option<BuildingDamageResponse>,
     pub defender_damaged: Option<DefenderDamageResponse>,
 }

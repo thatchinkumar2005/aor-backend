@@ -5,7 +5,7 @@ use crate::validator::{
     self,
     util::{
         Attacker, BombType, BuildingDetails, BulletSpawnResponse, CompanionResult, Coords,
-        DefenderDetails, MineDetails,
+        DefenderDetails, DefenderTarget, MineDetails,
     },
 };
 
@@ -80,6 +80,7 @@ pub struct DefenderResponse {
     pub map_space_id: i32,
     pub position: Coords,
     pub damage: i32,
+    pub target_id: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

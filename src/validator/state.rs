@@ -591,6 +591,7 @@ impl State {
                         roads,
                         shortest_path,
                     );
+                    log::info!("Priority: {:?}", priority);
                     let target_building = if priority.high_prior_building.0.is_some() {
                         priority.high_prior_building.0
                     } else {
@@ -666,6 +667,7 @@ impl State {
             map_space_id: target_mapspace_id,
             current_target_tile: companion.target_tile,
             is_alive: companion.companion_health > 0,
+            health: companion.companion_health,
             building_damaged,
             defender_damaged,
         })
@@ -1064,6 +1066,7 @@ impl State {
                             y: defender.defender_pos.y,
                             l: 0,
                         };
+                        let target_id = 1;
 
                         let next_hop = shortest_path
                             .get(&SourceDestXY {
@@ -1094,6 +1097,7 @@ impl State {
                                 map_space_id: defender.map_space_id,
                                 position: defender.defender_pos,
                                 damage: defender.damage,
+                                target_id,
                             });
                             defender.is_alive = false;
                             attacker.attacker_health =
@@ -1106,6 +1110,7 @@ impl State {
                             y: defender.defender_pos.y,
                             l: 0,
                         };
+                        let target_id = -1;
 
                         let next_hop = shortest_path
                             .get(&SourceDestXY {
@@ -1135,6 +1140,7 @@ impl State {
                                 map_space_id: defender.map_space_id,
                                 position: defender.defender_pos,
                                 damage: defender.damage,
+                                target_id,
                             });
                             defender.is_alive = false;
                             companion.companion_health =
