@@ -578,6 +578,7 @@ impl State {
                                         });
 
                                         if defender.current_health <= 0 {
+                                            defender.is_alive = false;
                                             companion.reached_dest = false;
                                             companion.target_building = None;
                                             companion.target_defender = None;
