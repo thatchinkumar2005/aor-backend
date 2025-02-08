@@ -335,9 +335,10 @@ impl State {
         for defender in self.defenders.iter_mut() {
             if defender.target_id.is_none() && defender.is_alive {
                 if defender.name == "Hut_Defender" {
-                    log::info!("Hut Defender{} alive", defender.map_space_id);
-                    defender.target_id = Some(DefenderTarget::Attacker);
-                    attacker.trigger_defender = true;
+                    if attacker.attacker_health > 0 {
+                        defender.target_id = Some(DefenderTarget::Attacker);
+                        attacker.trigger_defender = true;
+                    }
                 } else {
                     let attacker_manhattan_dist =
                         (defender.defender_pos.x - attacker.attacker_pos.x).abs()
@@ -347,18 +348,27 @@ impl State {
                             + (defender.defender_pos.y - companion.companion_pos.y).abs();
 
                     if companion_manhattan_dist <= defender.radius
-                        || attacker_manhattan_dist <= defender.radius
+                        && attacker_manhattan_dist <= defender.radius
                     {
                         if attacker_manhattan_dist <= companion_manhattan_dist {
-                            defender.target_id = Some(DefenderTarget::Attacker);
-                            attacker.trigger_defender = true;
+                            if attacker.attacker_health > 0 {
+                                defender.target_id = Some(DefenderTarget::Attacker);
+                                attacker.trigger_defender = true;
+                            } else if companion.companion_health > 0 {
+                                defender.target_id = Some(DefenderTarget::Companion);
+                                companion.trigger_defender = true;
+                            } else {
+                                defender.target_id = None;
+                            }
                         } else {
                             if companion.companion_health > 0 {
                                 defender.target_id = Some(DefenderTarget::Companion);
                                 companion.trigger_defender = true;
-                            } else {
+                            } else if attacker.attacker_health > 0 {
                                 defender.target_id = Some(DefenderTarget::Attacker);
                                 attacker.trigger_defender = true;
+                            } else {
+                                defender.target_id = None;
                             }
                         }
                     } else if companion_manhattan_dist <= defender.radius {
@@ -369,8 +379,12 @@ impl State {
                             defender.target_id = None;
                         }
                     } else if attacker_manhattan_dist <= defender.radius {
-                        defender.target_id = Some(DefenderTarget::Attacker);
-                        attacker.trigger_defender = true;
+                        if attacker.attacker_health > 0 {
+                            defender.target_id = Some(DefenderTarget::Attacker);
+                            attacker.trigger_defender = true;
+                        } else {
+                            defender.target_id = None;
+                        }
                     } else {
                         defender.target_id = None;
                     }
